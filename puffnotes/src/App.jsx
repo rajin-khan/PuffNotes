@@ -10,7 +10,11 @@ import {
   Wand2,
   Save,
   Check,
+  RotateCw,
+  XCircle,
+  CheckCircle,
 } from 'lucide-react'
+import { beautifyNoteWithGroq } from './lib/groq'
 
 export default function App() {
   const [isEditorVisible, setIsEditorVisible] = useState(true)
@@ -19,6 +23,12 @@ export default function App() {
   const [fileList, setFileList] = useState([])
   const [showFileModal, setShowFileModal] = useState(false)
   const [isFirstSave, setIsFirstSave] = useState(true)
+  const [showFileActions, setShowFileActions] = useState(false)
+
+  const [previewNote, setPreviewNote] = useState("")
+  const [showBeautifyControls, setShowBeautifyControls] = useState(false)
+  const [originalNote, setOriginalNote] = useState("")
+  const [isBeautifying, setIsBeautifying] = useState(false)
 
   const {
     folderHandle,
@@ -46,6 +56,8 @@ export default function App() {
     setNote("")
     setNoteName("untitled")
     setIsFirstSave(true)
+    setPreviewNote("")
+    setShowBeautifyControls(false)
   }
 
   const handleSave = async () => {
@@ -53,20 +65,52 @@ export default function App() {
       await pickFolder()
       await refreshFileList()
     }
-  
+
     if (!noteName.trim()) return
-  
+
     const filename = noteName.endsWith(".md") ? noteName : `${noteName}.md`
     const savedAs = await saveNote(filename, note, isFirstSave)
-  
+
     if (savedAs) {
       const baseName = savedAs.replace(/\.md$/, "")
-      setNoteName(baseName) // Update title if renamed
+      setNoteName(baseName)
       setIsFirstSave(false)
       refreshFileList()
     }
   }
-  
+
+  const handleBeautify = async () => {
+    setIsBeautifying(true)
+    setOriginalNote(note)
+    try {
+      const result = await beautifyNoteWithGroq(note)
+      setPreviewNote(result)
+      setShowBeautifyControls(true)
+    } catch (err) {
+      console.error("Beautify failed", err)
+      alert("Something went wrong with Groq beautify.")
+      setPreviewNote("")
+      setShowBeautifyControls(false)
+    } finally {
+      setIsBeautifying(false)
+    }
+  }
+
+  const acceptBeautified = () => {
+    setNote(previewNote)
+    setPreviewNote("")
+    setOriginalNote("")
+    setShowBeautifyControls(false)
+  }
+
+  const rejectBeautified = () => {
+    setPreviewNote("")
+    setShowBeautifyControls(false)
+  }
+
+  const regenerateBeautified = () => {
+    handleBeautify()
+  }
 
   useEffect(() => {
     const autoSave = async () => {
@@ -96,8 +140,24 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#fdf6ec] relative overflow-hidden">
 
-      {/* Top-right Buttons */}
-      <div className="absolute top-4 right-6 z-20 flex items-center space-x-4">
+      {/* Onboarding Overlay */}
+      {(!folderHandle || isFirstSave) && (
+        <div className="fixed inset-0 bg-black/60 z-40 pointer-events-none"></div>
+      )}
+
+      {/* Top-right Buttons with inline guidance */}
+      <div className="absolute top-4 right-6 z-50 flex items-center space-x-3">
+
+        {/* Onboarding Message (inline) */}
+        {(!folderHandle || isFirstSave) && (
+          <span className="font-serif text-sm text-gray-500 ml-2 bg-[#fff7ee] border border-[#e6ddcc] rounded-full px-4 py-1 shadow-sm">
+            {!folderHandle
+              ? "Before you start, select a folder to use"
+              : "Hit the save icon (autosaves after first tap)"}
+          </span>
+        )}
+      
+        {/* Folder button */}
         <button
           onClick={handleFolderButton}
           className="opacity-60 hover:opacity-100 transition"
@@ -105,6 +165,8 @@ export default function App() {
         >
           <FolderOpen size={20} />
         </button>
+
+        {/* Save / Check */}
         {isFirstSave ? (
           <button
             onClick={handleSave}
@@ -114,8 +176,10 @@ export default function App() {
             <Save size={20} />
           </button>
         ) : (
-          <Check size={20} className="text-green-600 opacity-70" />
+          <Check size={20} className="opacity-60" title="Autosaved" />
         )}
+
+        {/* Editor Toggle */}
         <button
           onClick={() => setIsEditorVisible((prev) => !prev)}
           className="opacity-60 hover:opacity-100 transition"
@@ -124,6 +188,7 @@ export default function App() {
           {isEditorVisible ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
         </button>
       </div>
+
 
       {/* File Explorer Modal */}
       {showFileModal && (
@@ -162,7 +227,7 @@ export default function App() {
           isEditorVisible ? 'translate-y-0' : 'translate-y-full'
         }`}
       >
-        <div className="bg-white rounded-t-xl shadow-xl border border-[#e6ddcc] max-w-3xl mx-auto p-6 h-[90vh] flex flex-col relative">
+        <div className="bg-white rounded-t-xl shadow-xl border border-[#e6ddcc] max-w-3xl mx-auto p-6 h-[90vh] flex flex-col relative z-20">
           {/* Header */}
           <div className="flex justify-between items-center mb-4">
             <h1 className="font-serif text-2xl tracking-tight">puffnotes</h1>
@@ -172,10 +237,9 @@ export default function App() {
               type="text"
               value={noteName}
               onChange={(e) => setNoteName(e.target.value)}
-              className="text-center font-serif text-lg bg-transparent outline-none border-b border-dotted border-gray-400 w-1/2"
-              placeholder="Note name..."
+              className="text-center font-serif text-sm bg-transparent outline-none text-gray-500 w-1/2"
+              placeholder="note name..."
             />
-
             <div className="flex space-x-4 text-lg">
               <button title="Export as PDF">
                 <FileDown size={20} />
@@ -191,21 +255,43 @@ export default function App() {
           {/* Textarea */}
           <div className="flex-1 overflow-hidden">
             <textarea
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
+              value={showBeautifyControls ? previewNote : note}
+              onChange={(e) => {
+                const val = e.target.value
+                showBeautifyControls ? setPreviewNote(val) : setNote(val)
+              }}
               placeholder="A quiet place to write. No cloud. No noise. Just thoughts, beautifully yours."
-              className="w-full h-full font-mono text-base bg-transparent resize-none outline-none leading-relaxed placeholder:text-[#bbb] placeholder:italic"
+              className="w-full h-full font-mono text-sm bg-transparent resize-none outline-none leading-relaxed placeholder:text-[#bbb] placeholder:italic"
             />
           </div>
 
-          {/* Beautify FAB */}
-          <div className="absolute bottom-6 right-6">
-            <button
-              title="Beautify with AI"
-              className="text-lg p-2 rounded-full shadow-md hover:scale-105 transition-transform bg-[#fff7ee] border border-[#e0ddd5]"
-            >
-              <Wand2 size={20} />
-            </button>
+          {/* Beautify Floating Control */}
+          <div className="absolute bottom-6 right-6 z-20">
+            {!showBeautifyControls ? (
+              <button
+                title="Beautify with AI"
+                onClick={handleBeautify}
+                disabled={isBeautifying}
+                className="text-lg p-3 rounded-full shadow-md hover:scale-105 transition-transform bg-[#fff7ee] border border-[#e0ddd5]"
+              >
+                {isBeautifying ? "..." : <Wand2 size={20} />}
+              </button>
+            ) : (
+              <div className="flex items-center space-x-3 px-4 py-3 rounded-full bg-[#fff7ee] border border-[#e0ddd5] shadow-md transition-all">
+                <span className="font-serif text-sm text-gray-600">
+                  preview (accept, regenerate, or reject)
+                </span>
+                <button title="Accept" onClick={acceptBeautified}>
+                  <CheckCircle size={20} />
+                </button>
+                <button title="Regenerate" onClick={regenerateBeautified}>
+                  <RotateCw size={20} />
+                </button>
+                <button title="Reject" onClick={rejectBeautified}>
+                  <XCircle size={20} />
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
