@@ -53,14 +53,20 @@ export default function App() {
       await pickFolder()
       await refreshFileList()
     }
-
+  
     if (!noteName.trim()) return
-
+  
     const filename = noteName.endsWith(".md") ? noteName : `${noteName}.md`
-    await saveNote(filename, note)
-    setIsFirstSave(false)
-    refreshFileList()
+    const savedAs = await saveNote(filename, note, isFirstSave)
+  
+    if (savedAs) {
+      const baseName = savedAs.replace(/\.md$/, "")
+      setNoteName(baseName) // Update title if renamed
+      setIsFirstSave(false)
+      refreshFileList()
+    }
   }
+  
 
   useEffect(() => {
     const autoSave = async () => {

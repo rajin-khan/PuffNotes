@@ -13,13 +13,44 @@ export default function useFileSystemAccess() {
     }
   }
 
-  const saveNote = async (filename, content) => {
+  const saveNote = async (filename, content, isFirstSave = false) => {
     if (!folderHandle || !filename) return
-    const fileHandle = await folderHandle.getFileHandle(filename, { create: true })
-    const writable = await fileHandle.createWritable()
-    await writable.write(content)
-    await writable.close()
-  }  
+  
+    let finalName = filename
+  
+    // Only perform deduplication on first save
+    if (isFirstSave) {
+      if (await fileExists(finalName)) {
+        const base = filename.replace(/\.md$/, "")
+        let counter = 1
+        while (await fileExists(`${base}-${counter}.md`)) {
+          counter++
+        }
+        finalName = `${base}-${counter}.md`
+      }
+    }
+  
+    try {
+      const fileHandle = await folderHandle.getFileHandle(finalName, { create: true })
+      const writable = await fileHandle.createWritable()
+      await writable.write(content)
+      await writable.close()
+      return finalName // return what was saved
+    } catch (err) {
+      console.error(`Failed to save "${finalName}":`, err)
+      return null
+    }
+  }
+  
+  const fileExists = async (filename) => {
+    for await (const entry of folderHandle.values()) {
+      if (entry.kind === 'file' && entry.name === filename) {
+        return true
+      }
+    }
+    return false
+  }
+  
 
   const loadNote = async (filename) => {
     if (!folderHandle) return null
