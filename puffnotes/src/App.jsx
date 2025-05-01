@@ -172,6 +172,11 @@ export default function App() {
         </motion.button>
       </div>
 
+      {!window.showDirectoryPicker && (
+        <div className="fixed top-0 left-0 right-0 bg-red-50 text-red-800 text-sm font-serif px-4 py-2 text-center z-50">
+          PuffNotes requires a desktop browser (like Chrome or Edge) for full functionality.
+        </div>
+      )}
 
       <video
         autoPlay

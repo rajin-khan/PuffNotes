@@ -1,6 +1,12 @@
 import { useState } from 'react'
 
 export default function useFileSystemAccess() {
+
+  if (typeof window === 'undefined' || !window.showDirectoryPicker) {
+      alert("PuffNotes requires a desktop Chromium browser (like Chrome or Edge). This browser doesn't support local folder access.")
+      throw new Error("File System Access API not supported")
+    }    
+
   const [folderHandle, setFolderHandle] = useState(null)
 
   const pickFolder = async () => {
