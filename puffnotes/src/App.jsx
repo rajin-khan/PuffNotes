@@ -338,7 +338,7 @@ export default function App() {
             exit={{ opacity: 0 }}
           >
             <motion.div 
-              className="bg-white/70 backdrop-blur-2xl border border-[#e6ddcc] rounded-xl shadow-2xl p-6 w-[90%] max-w-sm text-center font-serif"
+              className="bg-white/70 backdrop-blur-2xl border border-[#e6ddcc] rounded-4xl shadow-2xl p-10 w-[95%] max-w-md text-center font-serif"
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
@@ -369,6 +369,17 @@ export default function App() {
               >
                 Close
               </button>
+              <p className="absolute bottom-3 left-1/2 transform -translate-x-1/2 text-[10px] text-gray-500 opacity-50">
+                Background video via&nbsp;
+                <a
+                  href="https://moewalls.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline"
+                >
+                  MoeWalls
+                </a>
+              </p>
             </motion.div>
           </motion.div>
         )}
