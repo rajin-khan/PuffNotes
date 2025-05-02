@@ -25,6 +25,10 @@ import { AnimatePresence, motion } from 'framer-motion';
 // --- Import the new MarkdownPreview component ---
 import MarkdownPreview from './components/MarkdownPreview'; // Adjust path if needed
 
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+import * as ReactDOM from 'react-dom/client';
+
 // --- Constants for API Key Management ---
 const USER_API_KEY_STORAGE_KEY = 'puffnotes_groqUserApiKey_v1';
 const DEFAULT_GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || '';
@@ -59,6 +63,8 @@ export default function App() {
 
   // --- Add State for Markdown Preview Toggle ---
   const [isPreviewMode, setIsPreviewMode] = useState(false); // <-- ADDED STATE
+
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
 
   const {
     folderHandle,
@@ -135,6 +141,214 @@ export default function App() {
     setIsPreviewMode(prev => !prev);
   };
 
+  const handleExportPdf = async () => {
+    const contentToExport = showBeautifyControls ? previewNote : note;
+    if (!contentToExport.trim() || isExportingPdf) return;
+  
+    setIsExportingPdf(true);
+    const filename = (noteName.trim() || "untitled") + ".pdf";
+  
+    // --- PDF Styling Constants ---
+    const pageBackgroundColor = '#fdfbf7';
+    const headerTextColor = '#a8a29a';
+    const headerText = "puffnotes";
+    const headerFontSize = 9;
+    const margin = 18; // Page margin in mm
+    const headerTopMargin = 15; // Y position for header text
+  
+    // --- PDF Document Setup ---
+    const pdf = new jsPDF({
+      orientation: 'p',
+      unit: 'mm',
+      format: 'a4',
+      putOnlyUsedFonts: true,
+      floatPrecision: 'smart'
+    });
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    const contentWidthMM = pdfWidth - (margin * 2);
+    const contentHeightMM = pdfHeight - (margin * 2) - 10; // Reduced to avoid overflow
+    
+    // Approximate content width in pixels for html2canvas
+    const contentWidthPX = Math.floor(contentWidthMM * 3.78);
+  
+    // 1. Prepare temporary container
+    const tempContainerId = 'pdf-render-container';
+    let tempContainer = document.getElementById(tempContainerId);
+    if (!tempContainer) {
+      tempContainer = document.createElement('div');
+      tempContainer.id = tempContainerId;
+      tempContainer.style.position = 'absolute';
+      tempContainer.style.left = '-9999px';
+      tempContainer.style.top = '-9999px';
+      tempContainer.style.border = '1px solid transparent';
+      document.body.appendChild(tempContainer);
+    } else {
+      tempContainer.innerHTML = '';
+    }
+  
+    // Style container for accurate capture
+    tempContainer.style.width = `${contentWidthPX}px`;
+    tempContainer.style.padding = `1px`;
+    tempContainer.style.background = pageBackgroundColor;
+    tempContainer.style.fontFamily = 'monospace';
+    tempContainer.style.fontSize = '14px';
+    tempContainer.style.lineHeight = '1.625';
+    tempContainer.style.color = '#1f2937';
+    tempContainer.style.height = 'auto';
+    tempContainer.style.display = 'inline-block';
+  
+    // 2. Render MarkdownPreview
+    const root = ReactDOM.createRoot(tempContainer);
+    root.render(<MarkdownPreview markdownText={contentToExport} />);
+  
+    // Allow rendering, style calculation, and layout stabilization
+    await new Promise(resolve => setTimeout(resolve, 500));
+  
+    // 3. Apply Style Overrides
+    try {
+      const selectorsAndColors = [
+        { selector: '.text-gray-800', color: '#1f2937' },
+        { selector: '.text-gray-600', color: '#4b5563' },
+        { selector: 'blockquote', color: '#4b5563' },
+        { selector: '.border-\\[\\#e6ddcc\\]', color: '#e6ddcc', styleProp: 'borderColor' },
+        { selector: '.bg-\\[\\#fff7ee\\]', color: '#fff7ee', styleProp: 'backgroundColor' },
+        { selector: '.text-\\[\\#9a8c73\\]', color: '#9a8c73' },
+        { selector: '.bg-\\[\\#fdf6ec\\]', color: '#fdf6ec', styleProp: 'backgroundColor' },
+      ];
+      selectorsAndColors.forEach(({ selector, color, styleProp = 'color' }) => {
+        try {
+          const elements = tempContainer.querySelectorAll(selector);
+          elements.forEach(el => {
+            const className = selector.startsWith('.') ? selector.substring(1).replace(/\\/g, '') : null;
+            if ((className && el.classList.contains(className)) || !selector.startsWith('.')) {
+              el.style[styleProp] = color;
+            }
+          });
+        } catch (e) {
+          console.warn(`Failed override for selector: ${selector}`, e);
+        }
+      });
+    } catch (e) {
+      console.warn("Error applying style overrides:", e);
+    }
+  
+    try {
+      // 4. Capture the entire rendered content
+      const canvas = await html2canvas(tempContainer, {
+        scale: 3,
+        useCORS: true,
+        logging: false,
+        backgroundColor: pageBackgroundColor,
+        width: tempContainer.scrollWidth,
+        height: tempContainer.scrollHeight,
+        windowWidth: tempContainer.scrollWidth,
+        windowHeight: tempContainer.scrollHeight,
+        scrollX: 0,
+        scrollY: 0,
+        removeContainer: false,
+        imageTimeout: 15000,
+      });
+  
+      // 5. Calculate dimensions and scaling factors
+      const imgData = canvas.toDataURL('image/png');
+      const imgProps = pdf.getImageProperties(imgData);
+      const canvasWidthPX = canvas.width;
+      const canvasHeightPX = canvas.height;
+      
+      // Calculate the height scaling to maintain aspect ratio
+      const scaleFactor = contentWidthMM / canvasWidthPX;
+      const totalHeightMM = canvasHeightPX * scaleFactor;
+      
+      // Calculate how many pixels of canvas can fit on one PDF page
+      const pixelsPerPage = contentHeightMM / scaleFactor;
+      
+      // Add header and background to first page
+      const addPageStyling = () => {
+        pdf.setFillColor(pageBackgroundColor);
+        pdf.rect(0, 0, pdfWidth, pdfHeight, 'F'); // Background
+        pdf.setFontSize(headerFontSize);
+        try {
+          pdf.setFont('times', 'normal');
+        } catch (e) {
+          pdf.setFont('serif', 'normal');
+        }
+        pdf.setTextColor(headerTextColor);
+        pdf.text(headerText, margin, headerTopMargin);
+      };
+  
+      // Init first page
+      addPageStyling();
+      
+      // 6. Slice and add the canvas to multiple pages if needed
+      let remainingHeight = canvasHeightPX;
+      let currentY = 0;
+      
+      while (remainingHeight > 0) {
+        // Height to use from canvas for current page
+        const heightToUse = Math.min(remainingHeight, pixelsPerPage);
+        
+        // Create a temporary canvas for this page slice
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = canvasWidthPX;
+        tempCanvas.height = heightToUse;
+        const tempCtx = tempCanvas.getContext('2d');
+        
+        // Draw the relevant portion of the original canvas
+        tempCtx.drawImage(
+          canvas,
+          0, currentY,                // Source x, y
+          canvasWidthPX, heightToUse, // Source width, height
+          0, 0,                       // Destination x, y
+          canvasWidthPX, heightToUse  // Destination width, height
+        );
+        
+        // Add the image slice to PDF
+        const pageImgData = tempCanvas.toDataURL('image/png');
+        pdf.addImage(
+          pageImgData,
+          'PNG',
+          margin,
+          margin,
+          contentWidthMM,
+          heightToUse * scaleFactor,
+          undefined,
+          'FAST'
+        );
+        
+        // Update for next slice
+        currentY += heightToUse;
+        remainingHeight -= heightToUse;
+        
+        // Add a new page if there's more content
+        if (remainingHeight > 0) {
+          pdf.addPage();
+          addPageStyling();
+        }
+      }
+  
+      // 7. Save the PDF
+      pdf.save(filename);
+  
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      let message = `Failed to export PDF.`;
+      if (error.message && error.message.includes('color function "oklch"')) {
+        message += ' A style used in the note might not be supported.';
+      } else {
+        message += ` ${error.message || 'Check console for details.'}`;
+      }
+      alert(message);
+    } finally {
+      // 8. Clean up
+      root.unmount();
+      if (tempContainer && tempContainer.parentNode) {
+        tempContainer.parentNode.removeChild(tempContainer);
+      }
+      setIsExportingPdf(false);
+    }
+  };
+
   // --- useEffect Hooks (No Changes) ---
   useEffect(() => { /* ... autosave logic no changes ... */
     const autoSave = async () => { const shouldSave = !isFirstSave && folderHandle && noteName.trim() && !showBeautifyControls; if (shouldSave) { const filename = noteName.endsWith(".md") ? noteName : `${noteName}.md`; try { await saveNote(filename, note, false); } catch (err) { console.warn("Autosave failed:", err); } } }; const debounceTimeout = setTimeout(autoSave, 750); return () => clearTimeout(debounceTimeout);
@@ -171,7 +385,7 @@ export default function App() {
           <motion.button onClick={() => { setDropAnimationComplete(false); setIsEditorVisible((prev) => !prev); }} className="opacity-60 hover:opacity-100 transition text-gray-400" title={isEditorVisible ? 'Hide Editor' : 'Show Editor'} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}> {isEditorVisible ? <ChevronDown size={20} /> : <ChevronUp size={20} />} </motion.button>
         </div>
         {/* Original Info Modal (with BYOK additions inside) */}
-        <AnimatePresence> {showInfoModal && ( <motion.div className="fixed inset-0 z-[60] bg-black bg-opacity-50 flex items-center justify-center p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowInfoModal(false)}> <motion.div className="bg-white border border-[#e6ddcc] rounded-xl shadow-2xl p-8 pt-6 w-full max-w-md text-center font-serif relative" initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} transition={{ duration: 0.3 }} onClick={e => e.stopPropagation()}> <button onClick={() => setShowInfoModal(false)} className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition" aria-label="Close modal"> <X size={18} /> </button> <h2 className="text-2xl text-[#1a1a1a] mb-3">puffnotes</h2> <AnimatePresence> {apiKeyError && ( <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-md text-xs my-3 text-left flex items-center gap-2 overflow-hidden"> <AlertTriangle size={14} className="flex-shrink-0" /> <span>To keep this AI feature free for everyone, the shared access has limits. Please add your own (also free!) Groq API key below for best results.</span> </motion.div> )} </AnimatePresence> <p className="text-[#6b7280] text-sm leading-relaxed mb-4"> A serene space for note-taking — simple, offline, and distraction-free.<br /> Click the <Wand2 size={14} className="inline mb-0.5 text-[#9a8c73]" /> wand to magically expand and beautify your notes using AI. </p> <div className="text-left text-xs border-t border-gray-200 pt-4 mt-4 space-y-2"> <div className="flex justify-between items-center"> <p className="text-gray-600 font-medium flex items-center gap-1.5"> <KeyRound size={14} /> <span>Personal AI key (Highly Suggested)</span> </p> <button onClick={() => setShowApiKeyInput(prev => !prev)} className="text-gray-500 hover:text-gray-800 text-xs underline"> {showApiKeyInput ? 'Hide' : 'Add/Edit'} </button> </div> <AnimatePresence> {showApiKeyInput && ( <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden space-y-2"> <p className="text-gray-500 leading-snug"> Add your free Groq API key for unlimited AI use. Get one in seconds at <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer" className="text-gray-500 underline hover:text-orange-400">Groq Console</a>. </p> <div className="flex items-center gap-2"> <input ref={apiKeyInputRef} type="password" placeholder="Paste Groq API Key (gsk_...)" defaultValue={userApiKey} className="flex-grow px-2 py-1 text-xs border border-gray-300 rounded-md outline-none focus:ring-1 focus:ring-blue-300 font-mono" /> <button onClick={() => handleSaveUserApiKey(apiKeyInputRef.current?.value || '')} className="px-3 py-1 text-xs bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 transition text-gray-700 whitespace-nowrap"> Save </button> </div> {apiKeySaveFeedback && ( <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-green-600 text-xs mt-1"> {apiKeySaveFeedback} </motion.p> )} </motion.div> )} </AnimatePresence> </div> <p className="text-[#8c6e54] text-xs italic mt-4 mb-2"> No accounts. No cloud. Just you and your thoughts. </p> <p className="text-[#9c8063] text-xs"> lovingly crafted by <a href="https://rajinkhan.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-orange-200 transition"> Rajin Khan </a> </p> <button onClick={() => setShowInfoModal(false)} className="mt-5 px-5 py-1.5 text-sm bg-[#fff7ee] border border-[#e0ddd5] rounded-full hover:bg-[#f0e9df] transition text-gray-700"> Close </button> <p className="absolute bottom-3 left-1/2 transform -translate-x-1/2 text-[10px] text-gray-500 opacity-50"> Background video via <a href="https://moewalls.com" target="_blank" rel="noopener noreferrer" className="underline">MoeWalls</a> </p> </motion.div> </motion.div> )} </AnimatePresence>
+        <AnimatePresence> {showInfoModal && ( <motion.div className="fixed inset-0 z-[60] bg-black bg-opacity-50 flex items-center justify-center p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowInfoModal(false)}> <motion.div className="bg-white border border-[#e6ddcc] rounded-xl shadow-2xl p-8 pt-6 w-full max-w-md text-center font-serif relative" initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} transition={{ duration: 0.3 }} onClick={e => e.stopPropagation()}> <button onClick={() => setShowInfoModal(false)} className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition" aria-label="Close modal"> <X size={18} /> </button> <h2 className="text-2xl text-[#1a1a1a] mb-3">puffnotes</h2> <AnimatePresence> {apiKeyError && ( <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-md text-xs my-3 text-left flex items-center gap-2 overflow-hidden"> <AlertTriangle size={14} className="flex-shrink-0" /> <span>To keep this AI feature free for everyone, the shared access has limits. Please add your own (also free!) Groq API key below for best results.</span> </motion.div> )} </AnimatePresence> <p className="text-[#6b7280] text-sm leading-relaxed mb-4"> A serene space for note-taking — simple, offline, and distraction-free.<br /> Click the <Wand2 size={14} className="inline mb-0.5 text-[#9a8c73]" /> wand to magically expand and beautify your notes using AI. </p> <div className="text-left text-xs border-t border-gray-200 pt-4 mt-4 space-y-2"> <div className="flex justify-between items-center"> <p className="text-gray-600 font-medium flex items-center gap-1.5"> <KeyRound size={14} /> <span>Personal AI key (Recommended)</span> </p> <button onClick={() => setShowApiKeyInput(prev => !prev)} className="text-gray-500 hover:text-gray-800 text-xs underline"> {showApiKeyInput ? 'Hide' : 'Add/Edit'} </button> </div> <AnimatePresence> {showApiKeyInput && ( <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden space-y-2"> <p className="text-gray-500 leading-snug"> Add your free Groq API key for unlimited AI use. Get one in seconds at <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer" className="text-gray-500 underline hover:text-orange-400">Groq Console</a>. </p> <div className="flex items-center gap-2"> <input ref={apiKeyInputRef} type="password" placeholder="Paste Groq API Key (gsk_...)" defaultValue={userApiKey} className="flex-grow px-2 py-1 text-xs border border-gray-300 rounded-md outline-none focus:ring-1 focus:ring-blue-300 font-mono" /> <button onClick={() => handleSaveUserApiKey(apiKeyInputRef.current?.value || '')} className="px-3 py-1 text-xs bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 transition text-gray-700 whitespace-nowrap"> Save </button> </div> {apiKeySaveFeedback && ( <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-green-600 text-xs mt-1"> {apiKeySaveFeedback} </motion.p> )} </motion.div> )} </AnimatePresence> </div> <p className="text-[#8c6e54] text-xs italic mt-4 mb-2"> No accounts. No cloud. Just you and your thoughts. </p> <p className="text-[#9c8063] text-xs"> lovingly crafted by <a href="https://rajinkhan.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-orange-200 transition"> Rajin Khan </a> </p> <button onClick={() => setShowInfoModal(false)} className="mt-5 px-5 py-1.5 text-sm bg-[#fff7ee] border border-[#e0ddd5] rounded-full hover:bg-[#f0e9df] transition text-gray-700"> Close </button> <p className="absolute bottom-3 left-1/2 transform -translate-x-1/2 text-[10px] text-gray-500 opacity-50"> Background video via <a href="https://moewalls.com" target="_blank" rel="noopener noreferrer" className="underline">MoeWalls</a> </p> </motion.div> </motion.div> )} </AnimatePresence>
       </div>
 
       {/* Original File Explorer Modal */}
@@ -224,10 +438,34 @@ export default function App() {
              </div>
 
 
-            {/* Right side: Original Header Buttons */}
+            {/* Right side: Header Buttons */}
             <div className="flex space-x-4 text-lg text-gray-600 flex-shrink-0">
-              <motion.button title="Export as Markdown (.md)" onClick={() => { /* Export logic */ const contentToExport = showBeautifyControls ? previewNote : note; if (!contentToExport.trim()) return; const filename = (noteName.trim() || "untitled") + ".md"; const blob = new Blob([contentToExport], { type: 'text/markdown;charset=utf-8' }); const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = filename; document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(link.href); }} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }} className="hover:text-gray-900 p-1 disabled:opacity-30" disabled={!(showBeautifyControls ? previewNote : note).trim()}> <FileDown size={18} /> </motion.button>
-              <motion.button title="New Note" onClick={handleNewNote} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }} className="hover:text-gray-900 p-1"> <FilePlus size={18} /> </motion.button>
+              {/* PDF Export Button */}
+              <motion.button 
+                title="Export as PDF" 
+                onClick={handleExportPdf} 
+                whileHover={{ scale: 1.1 }} 
+                whileTap={{ scale: 0.95 }} 
+                className="hover:text-gray-900 p-1 disabled:opacity-30" 
+                disabled={!(showBeautifyControls ? previewNote : note).trim() || isExportingPdf}
+              >
+                {isExportingPdf ? (
+                  <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}>
+                    <RotateCw size={18} className="text-gray-400" />
+                  </motion.div>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <path d="M9 15h6"></path>
+                    <path d="M9 11h6"></path>
+                  </svg>
+                )}
+              </motion.button>
+              {/* Existing New Note Button */}
+              <motion.button title="New Note" onClick={handleNewNote} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }} className="hover:text-gray-900 p-1">
+                <FilePlus size={18} />
+              </motion.button>
             </div>
           </motion.div>
 
