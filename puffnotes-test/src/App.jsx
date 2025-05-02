@@ -680,7 +680,7 @@ export default function App() {
           <motion.hr className="border-gray-200 mb-4 flex-shrink-0" animate={{ opacity: focusMode ? 0.2 : 1 }} />
 
           {/* Textarea - Original */}
-          <div className="flex-1 overflow-y-auto relative" >
+          <div className="flex-1 relative" >
             <textarea
               value={showBeautifyControls ? previewNote : note}
               onChange={(e) => {
