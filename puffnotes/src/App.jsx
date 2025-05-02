@@ -254,7 +254,7 @@ export default function App() {
         Your browser does not support the video tag.
       </video>
 
-      {/* Onboarding Overlay - Removed blur, using simple opacity */}
+      {/* Onboarding Overlay - Removed blur, using simple opacity
       <AnimatePresence>
         {(!folderHandle || isFirstSave) && (
           <motion.div
@@ -266,6 +266,7 @@ export default function App() {
           />
         )}
       </AnimatePresence>
+      */}
 
       {/* Top-right Buttons - Removed blur and transparency from container */}
       <div className="absolute top-4 right-6 z-50 flex items-center space-x-3">
@@ -280,7 +281,7 @@ export default function App() {
               className="font-serif text-sm text-gray-600 mr-3 bg-[#fff7ee] border border-[#e6ddcc] rounded-full px-4 py-1 shadow-sm"
             >
               {!folderHandle
-                ? "Select a folder to save notes"
+                ? "Select a folder to save notes (or to close this message)"
                 : "Save your note (autosaves after)"}
             </motion.span>
           )}
