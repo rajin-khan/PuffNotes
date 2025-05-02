@@ -489,7 +489,7 @@ export default function App() {
                      <div className="flex justify-between items-center">
                         <p className="text-gray-600 font-medium flex items-center gap-1.5">
                             <KeyRound size={14} />
-                            <span>Personal AI key (Highly Suggested)</span>
+                            <span>Personal AI key (Recommended)</span>
                         </p>
                         <button
                             onClick={() => setShowApiKeyInput(prev => !prev)}
