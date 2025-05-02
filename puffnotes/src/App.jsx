@@ -25,6 +25,10 @@ import { AnimatePresence, motion } from 'framer-motion';
 // --- Import the new MarkdownPreview component ---
 import MarkdownPreview from './components/MarkdownPreview'; // Adjust path if needed
 
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+import * as ReactDOM from 'react-dom/client';
+
 // --- Constants for API Key Management ---
 const USER_API_KEY_STORAGE_KEY = 'puffnotes_groqUserApiKey_v1';
 const DEFAULT_GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || '';
@@ -59,6 +63,8 @@ export default function App() {
 
   // --- Add State for Markdown Preview Toggle ---
   const [isPreviewMode, setIsPreviewMode] = useState(false); // <-- ADDED STATE
+
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
 
   const {
     folderHandle,
@@ -133,6 +139,214 @@ export default function App() {
     // Prevent toggling if AI controls are shown
     if (showBeautifyControls) return;
     setIsPreviewMode(prev => !prev);
+  };
+
+  const handleExportPdf = async () => {
+    const contentToExport = showBeautifyControls ? previewNote : note;
+    if (!contentToExport.trim() || isExportingPdf) return;
+  
+    setIsExportingPdf(true);
+    const filename = (noteName.trim() || "untitled") + ".pdf";
+  
+    // --- PDF Styling Constants ---
+    const pageBackgroundColor = '#fdfbf7';
+    const headerTextColor = '#a8a29a';
+    const headerText = "puffnotes";
+    const headerFontSize = 9;
+    const margin = 18; // Page margin in mm
+    const headerTopMargin = 15; // Y position for header text
+  
+    // --- PDF Document Setup ---
+    const pdf = new jsPDF({
+      orientation: 'p',
+      unit: 'mm',
+      format: 'a4',
+      putOnlyUsedFonts: true,
+      floatPrecision: 'smart'
+    });
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    const contentWidthMM = pdfWidth - (margin * 2);
+    const contentHeightMM = pdfHeight - (margin * 2) - 10; // Reduced to avoid overflow
+    
+    // Approximate content width in pixels for html2canvas
+    const contentWidthPX = Math.floor(contentWidthMM * 3.78);
+  
+    // 1. Prepare temporary container
+    const tempContainerId = 'pdf-render-container';
+    let tempContainer = document.getElementById(tempContainerId);
+    if (!tempContainer) {
+      tempContainer = document.createElement('div');
+      tempContainer.id = tempContainerId;
+      tempContainer.style.position = 'absolute';
+      tempContainer.style.left = '-9999px';
+      tempContainer.style.top = '-9999px';
+      tempContainer.style.border = '1px solid transparent';
+      document.body.appendChild(tempContainer);
+    } else {
+      tempContainer.innerHTML = '';
+    }
+  
+    // Style container for accurate capture
+    tempContainer.style.width = `${contentWidthPX}px`;
+    tempContainer.style.padding = `1px`;
+    tempContainer.style.background = pageBackgroundColor;
+    tempContainer.style.fontFamily = 'monospace';
+    tempContainer.style.fontSize = '14px';
+    tempContainer.style.lineHeight = '1.625';
+    tempContainer.style.color = '#1f2937';
+    tempContainer.style.height = 'auto';
+    tempContainer.style.display = 'inline-block';
+  
+    // 2. Render MarkdownPreview
+    const root = ReactDOM.createRoot(tempContainer);
+    root.render(<MarkdownPreview markdownText={contentToExport} />);
+  
+    // Allow rendering, style calculation, and layout stabilization
+    await new Promise(resolve => setTimeout(resolve, 500));
+  
+    // 3. Apply Style Overrides
+    try {
+      const selectorsAndColors = [
+        { selector: '.text-gray-800', color: '#1f2937' },
+        { selector: '.text-gray-600', color: '#4b5563' },
+        { selector: 'blockquote', color: '#4b5563' },
+        { selector: '.border-\\[\\#e6ddcc\\]', color: '#e6ddcc', styleProp: 'borderColor' },
+        { selector: '.bg-\\[\\#fff7ee\\]', color: '#fff7ee', styleProp: 'backgroundColor' },
+        { selector: '.text-\\[\\#9a8c73\\]', color: '#9a8c73' },
+        { selector: '.bg-\\[\\#fdf6ec\\]', color: '#fdf6ec', styleProp: 'backgroundColor' },
+      ];
+      selectorsAndColors.forEach(({ selector, color, styleProp = 'color' }) => {
+        try {
+          const elements = tempContainer.querySelectorAll(selector);
+          elements.forEach(el => {
+            const className = selector.startsWith('.') ? selector.substring(1).replace(/\\/g, '') : null;
+            if ((className && el.classList.contains(className)) || !selector.startsWith('.')) {
+              el.style[styleProp] = color;
+            }
+          });
+        } catch (e) {
+          console.warn(`Failed override for selector: ${selector}`, e);
+        }
+      });
+    } catch (e) {
+      console.warn("Error applying style overrides:", e);
+    }
+  
+    try {
+      // 4. Capture the entire rendered content
+      const canvas = await html2canvas(tempContainer, {
+        scale: 3,
+        useCORS: true,
+        logging: false,
+        backgroundColor: pageBackgroundColor,
+        width: tempContainer.scrollWidth,
+        height: tempContainer.scrollHeight,
+        windowWidth: tempContainer.scrollWidth,
+        windowHeight: tempContainer.scrollHeight,
+        scrollX: 0,
+        scrollY: 0,
+        removeContainer: false,
+        imageTimeout: 15000,
+      });
+  
+      // 5. Calculate dimensions and scaling factors
+      const imgData = canvas.toDataURL('image/png');
+      const imgProps = pdf.getImageProperties(imgData);
+      const canvasWidthPX = canvas.width;
+      const canvasHeightPX = canvas.height;
+      
+      // Calculate the height scaling to maintain aspect ratio
+      const scaleFactor = contentWidthMM / canvasWidthPX;
+      const totalHeightMM = canvasHeightPX * scaleFactor;
+      
+      // Calculate how many pixels of canvas can fit on one PDF page
+      const pixelsPerPage = contentHeightMM / scaleFactor;
+      
+      // Add header and background to first page
+      const addPageStyling = () => {
+        pdf.setFillColor(pageBackgroundColor);
+        pdf.rect(0, 0, pdfWidth, pdfHeight, 'F'); // Background
+        pdf.setFontSize(headerFontSize);
+        try {
+          pdf.setFont('times', 'normal');
+        } catch (e) {
+          pdf.setFont('serif', 'normal');
+        }
+        pdf.setTextColor(headerTextColor);
+        pdf.text(headerText, margin, headerTopMargin);
+      };
+  
+      // Init first page
+      addPageStyling();
+      
+      // 6. Slice and add the canvas to multiple pages if needed
+      let remainingHeight = canvasHeightPX;
+      let currentY = 0;
+      
+      while (remainingHeight > 0) {
+        // Height to use from canvas for current page
+        const heightToUse = Math.min(remainingHeight, pixelsPerPage);
+        
+        // Create a temporary canvas for this page slice
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = canvasWidthPX;
+        tempCanvas.height = heightToUse;
+        const tempCtx = tempCanvas.getContext('2d');
+        
+        // Draw the relevant portion of the original canvas
+        tempCtx.drawImage(
+          canvas,
+          0, currentY,                // Source x, y
+          canvasWidthPX, heightToUse, // Source width, height
+          0, 0,                       // Destination x, y
+          canvasWidthPX, heightToUse  // Destination width, height
+        );
+        
+        // Add the image slice to PDF
+        const pageImgData = tempCanvas.toDataURL('image/png');
+        pdf.addImage(
+          pageImgData,
+          'PNG',
+          margin,
+          margin,
+          contentWidthMM,
+          heightToUse * scaleFactor,
+          undefined,
+          'FAST'
+        );
+        
+        // Update for next slice
+        currentY += heightToUse;
+        remainingHeight -= heightToUse;
+        
+        // Add a new page if there's more content
+        if (remainingHeight > 0) {
+          pdf.addPage();
+          addPageStyling();
+        }
+      }
+  
+      // 7. Save the PDF
+      pdf.save(filename);
+  
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      let message = `Failed to export PDF.`;
+      if (error.message && error.message.includes('color function "oklch"')) {
+        message += ' A style used in the note might not be supported.';
+      } else {
+        message += ` ${error.message || 'Check console for details.'}`;
+      }
+      alert(message);
+    } finally {
+      // 8. Clean up
+      root.unmount();
+      if (tempContainer && tempContainer.parentNode) {
+        tempContainer.parentNode.removeChild(tempContainer);
+      }
+      setIsExportingPdf(false);
+    }
   };
 
   // --- useEffect Hooks (No Changes) ---
@@ -224,10 +438,34 @@ export default function App() {
              </div>
 
 
-            {/* Right side: Original Header Buttons */}
+            {/* Right side: Header Buttons */}
             <div className="flex space-x-4 text-lg text-gray-600 flex-shrink-0">
-              <motion.button title="Export as Markdown (.md)" onClick={() => { /* Export logic */ const contentToExport = showBeautifyControls ? previewNote : note; if (!contentToExport.trim()) return; const filename = (noteName.trim() || "untitled") + ".md"; const blob = new Blob([contentToExport], { type: 'text/markdown;charset=utf-8' }); const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = filename; document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(link.href); }} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }} className="hover:text-gray-900 p-1 disabled:opacity-30" disabled={!(showBeautifyControls ? previewNote : note).trim()}> <FileDown size={18} /> </motion.button>
-              <motion.button title="New Note" onClick={handleNewNote} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }} className="hover:text-gray-900 p-1"> <FilePlus size={18} /> </motion.button>
+              {/* PDF Export Button */}
+              <motion.button 
+                title="Export as PDF" 
+                onClick={handleExportPdf} 
+                whileHover={{ scale: 1.1 }} 
+                whileTap={{ scale: 0.95 }} 
+                className="hover:text-gray-900 p-1 disabled:opacity-30" 
+                disabled={!(showBeautifyControls ? previewNote : note).trim() || isExportingPdf}
+              >
+                {isExportingPdf ? (
+                  <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}>
+                    <RotateCw size={18} className="text-gray-400" />
+                  </motion.div>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <path d="M9 15h6"></path>
+                    <path d="M9 11h6"></path>
+                  </svg>
+                )}
+              </motion.button>
+              {/* Existing New Note Button */}
+              <motion.button title="New Note" onClick={handleNewNote} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }} className="hover:text-gray-900 p-1">
+                <FilePlus size={18} />
+              </motion.button>
             </div>
           </motion.div>
 
