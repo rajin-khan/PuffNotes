@@ -1,4 +1,4 @@
-![Puffnotes Banner](./docs/puffnotesbannernew.png)
+![Puffnotes Banner](./docs/puffnotesbanneralt.png)
 
 <div align="center">
 
