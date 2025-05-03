@@ -4,3 +4,5 @@ structure.md
 promptv1.md
 .DS_Store
 /puffnotes/.env
+/puffnotes-test/.env
+/puffnotes-developer/.env
