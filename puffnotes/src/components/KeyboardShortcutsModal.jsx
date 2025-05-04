@@ -1,6 +1,7 @@
 // src/components/KeyboardShortcutsModal.jsx
+import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X, Keyboard } from 'lucide-react'; // Import Keyboard icon
+import { X, Keyboard } from 'lucide-react';
 
 const shortcuts = [
   { action: 'Toggle Editor', keys: 'Cmd/Ctrl + .' },
@@ -20,19 +21,19 @@ export default function KeyboardShortcutsModal({ isOpen, onClose }) {
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 z-[70] bg-black bg-opacity-50 flex items-center justify-center p-4" // Increased z-index slightly
+          className="fixed inset-0 z-[70] bg-black bg-opacity-50 flex items-center justify-center p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          onClick={onClose} // Close on overlay click
+          onClick={onClose}
         >
           <motion.div
-            className="bg-white border border-[#e6ddcc] rounded-xl shadow-2xl p-8 pt-6 w-full max-w-sm text-left font-serif relative overflow-y-auto max-h-[90vh]" // Adjusted max-w, text-align
+            className="bg-white border border-[#e6ddcc] rounded-xl shadow-2xl p-8 pt-6 w-full max-w-sm text-left font-serif relative overflow-y-auto max-h-[90vh]"
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
             transition={{ duration: 0.3 }}
-            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside modal
+            onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={onClose}
@@ -47,28 +48,45 @@ export default function KeyboardShortcutsModal({ isOpen, onClose }) {
             </h2>
 
             <div className="space-y-2 text-sm text-gray-700">
-              {shortcuts.map((shortcut) => (
-                <div key={shortcut.action} className="flex justify-between items-center border-b border-gray-100 pb-1.5">
-                  <span>{shortcut.action}</span>
-                  <span className="text-right">
-                    <code>{shortcut.keys.split(' + ')[0]}</code> + <code>{shortcut.keys.split(' + ')[1]}</code>
-                  </span>
-                </div>
-              ))}
+              {shortcuts.map((shortcut) => {
+                const keyParts = shortcut.keys.split(' + ');
+
+                return (
+                  <div key={shortcut.action} className="flex justify-between items-center border-b border-gray-100 pb-1.5 min-h-[2.5rem]"> {/* Added min-height for alignment */}
+                    <span>{shortcut.action}</span>
+                    <span className="text-right flex items-center space-x-1"> {/* Use flex for alignment */}
+                      {keyParts.map((part, index) => (
+                        <React.Fragment key={index}>
+                          <code>{part.trim()}</code>
+                          {/* Render the separator outside the code tag */}
+                          {index < keyParts.length - 1 && (
+                            <span className="text-gray-400 mx-0.5">+</span>
+                          )}
+                        </React.Fragment>
+                      ))}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
 
-            {/* Style for the code tags - Simple production version */}
+            {/* Updated styles for the code tags */}
             <style jsx global>{`
               .shortcuts-modal-content code {
-                display: inline-block; /* Prevents weird wrapping */
-                background-color: #f3f4f6; /* bg-gray-100 */
-                padding: 2px 6px;
-                border-radius: 4px;
-                border: 1px solid #e5e7eb; /* border-gray-200 */
-                font-size: 0.9em;
-                color: #4b5563; /* text-gray-600 */
-                margin-left: 2px; /* Add slight spacing */
+                display: inline-block;
+                background-color: #ffffff; /* White background */
+                padding: 4px 8px; /* Slightly more padding */
+                border-radius: 6px; /* More rounded corners */
+                border: 1px solid #d1d5db; /* border-gray-300 */
+                box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05); /* Subtle shadow */
+                font-size: 0.85em; /* Slightly smaller font */
+                color: #374151; /* text-gray-700 */
+                line-height: 1; /* Ensure tight line height */
+                vertical-align: middle; /* Align with '+' */
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"; /* Use system UI font */
               }
+              /* Ensure parent has the class for scoping */
+              .shortcuts-modal-content { display: none; }
             `}</style>
             {/* Add class to parent div to scope the style */}
             <div className="shortcuts-modal-content hidden"></div>
