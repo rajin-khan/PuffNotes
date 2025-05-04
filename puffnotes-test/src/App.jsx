@@ -18,6 +18,7 @@ import {
   AlertTriangle,
   Eye, // <-- Import Eye icon
   Pen, // <-- Import Pen icon
+  Keyboard,
 } from 'lucide-react'; // Changed Edit to Pen for clarity if needed, or keep Edit
 import { beautifyNoteWithGroq } from './lib/groq';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -28,6 +29,8 @@ import MarkdownPreview from './components/MarkdownPreview'; // Adjust path if ne
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import * as ReactDOM from 'react-dom/client';
+
+import KeyboardShortcutsModal from './components/KeyboardShortcutsModal'; 
 
 // --- Constants for API Key Management ---
 const USER_API_KEY_STORAGE_KEY = 'puffnotes_groqUserApiKey_v1';
@@ -65,6 +68,8 @@ export default function App() {
   const [isPreviewMode, setIsPreviewMode] = useState(false); // <-- ADDED STATE
 
   const [isExportingPdf, setIsExportingPdf] = useState(false);
+
+  const [showShortcutsModal, setShowShortcutsModal] = useState(false);
 
   const {
     folderHandle,
@@ -357,6 +362,84 @@ export default function App() {
     if (folderHandle) { refreshFileList(); } else { setFileList([]); }
   }, [folderHandle]);
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+      const ctrlOrCmd = isMac ? e.metaKey : e.ctrlKey;
+  
+      // Avoid triggering shortcuts while focused inside input fields (like the note title or API key)
+      const isTyping = ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName);
+      if (isTyping && document.activeElement !== document.querySelector("textarea")) return;
+  
+      // Cmd/Ctrl + Enter → Beautify Note
+      if (ctrlOrCmd && e.key === 'Enter') {
+        e.preventDefault();
+        if (!isBeautifying && note.trim()) handleBeautify(false);
+      }
+  
+      // Cmd/Ctrl + P → Toggle Preview Mode (manual only)
+      else if (ctrlOrCmd && e.key.toLowerCase() === 'p') {
+        e.preventDefault();
+        if (!showBeautifyControls) setIsPreviewMode(prev => !prev);
+      }
+  
+      // Cmd/Ctrl + E → Export PDF
+      else if (ctrlOrCmd && e.key.toLowerCase() === 'e') {
+        e.preventDefault();
+        handleExportPdf();
+      }
+  
+      // Cmd/Ctrl + K → New Note
+      else if (ctrlOrCmd && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        handleNewNote();
+      }
+  
+      // Cmd/Ctrl + S → Save Note
+      else if (ctrlOrCmd && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        handleSave();
+      }
+  
+      // Cmd/Ctrl + F → Toggle Focus Mode
+      else if (ctrlOrCmd && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        toggleFocusMode();
+      }
+  
+      // Cmd/Ctrl + O → Open Folder or Modal
+      else if (ctrlOrCmd && e.key.toLowerCase() === 'o') {
+        e.preventDefault();
+        handleFolderButton();
+      }
+
+      // Cmd/Ctrl + . → Open or Close Editor
+      else if (ctrlOrCmd && e.key.toLowerCase() === '.') {
+        setDropAnimationComplete(false); // Reset animation flag like the button does
+        setIsEditorVisible(prev => !prev); // Toggle visibility
+        handled = true;
+     }
+
+      else if (ctrlOrCmd && e.key === '/') { // Example: Cmd/Ctrl + /
+        setShowShortcutsModal(prev => !prev); // Toggle shortcut modal
+        handled = true;
+     }
+    };
+  
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [
+    note,
+    isBeautifying,
+    showBeautifyControls,
+    handleBeautify,
+    handleExportPdf,
+    handleNewNote,
+    handleSave,
+    toggleFocusMode,
+    handleFolderButton,
+    setShowShortcutsModal,
+  ]);  
 
   // --- Render Logic ---
   return (
@@ -364,7 +447,18 @@ export default function App() {
     <div className="min-h-screen bg-[#fdf6ec] relative overflow-hidden">
 
       {/* Original Top-left Info Button */}
-      <div className="absolute top-4 left-4 z-50"> <motion.button onClick={() => { setApiKeyError(false); setShowInfoModal(true); setShowApiKeyInput(!!userApiKey); setApiKeySaveFeedback(''); }} className="opacity-70 hover:opacity-90 transition p-1 rounded-full border border-gray-300 shadow-sm" title="About puffnotes" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}> <Info size={17} strokeWidth={2} className="text-gray-200" /> </motion.button> </div>
+      <div className="absolute top-4 left-4 z-50"> 
+        <motion.button onClick={() => { setApiKeyError(false); setShowInfoModal(true); setShowApiKeyInput(!!userApiKey); setApiKeySaveFeedback(''); }} className="opacity-70 hover:opacity-90 transition p-1 rounded-full border border-gray-300 shadow-sm" title="About puffnotes" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}> <Info size={17} strokeWidth={2} className="text-gray-200" /> </motion.button> 
+        {/* NEW: Shortcuts Button */}
+        <motion.button
+          onClick={() => setShowShortcutsModal(true)}
+          className="opacity-70 hover:opacity-90 transition p-1 rounded-full border border-gray-300 shadow-sm"
+          title="Keyboard Shortcuts (Cmd+/)"
+          whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}
+        >
+          <Keyboard size={17} strokeWidth={2} className="text-gray-200" />
+        </motion.button>
+      </div>
 
       {/* Original Browser Compatibility Warning */}
       {!window.showDirectoryPicker && ( <div className="fixed top-0 left-0 right-0 bg-red-50 text-red-800 text-sm font-serif px-4 py-2 text-center z-50 shadow"> PuffNotes requires a desktop browser (like Chrome or Edge) for full file system access. Basic editing is available. </div> )}
@@ -384,6 +478,11 @@ export default function App() {
           {isFirstSave ? ( <motion.button onClick={handleSave} className={`opacity-60 transition text-gray-400 ${!noteName.trim() ? 'cursor-not-allowed opacity-30' : 'hover:opacity-100'}`} title="Save Note" whileHover={noteName.trim() ? { scale: 1.1 } : {}} whileTap={noteName.trim() ? { scale: 0.95 } : {}} disabled={!noteName.trim()}> <Save size={20} /> </motion.button> ) : ( <motion.div animate={{ rotate: saveIndicator ? [0, 20, 0] : 0, scale: saveIndicator ? [1, 1.2, 1] : 1, color: saveIndicator ? ["#6b7280", "#10b981", "#6b7280"] : "#9ca3af" }} transition={{ duration: 0.5 }} title="Note Autosaved"> <Check size={20} className="opacity-100" /> </motion.div> )}
           <motion.button onClick={() => { setDropAnimationComplete(false); setIsEditorVisible((prev) => !prev); }} className="opacity-60 hover:opacity-100 transition text-gray-400" title={isEditorVisible ? 'Hide Editor' : 'Show Editor'} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}> {isEditorVisible ? <ChevronDown size={20} /> : <ChevronUp size={20} />} </motion.button>
         </div>
+        {/* Render the Modals */}
+        <KeyboardShortcutsModal
+            isOpen={showShortcutsModal}
+            onClose={() => setShowShortcutsModal(false)}
+        />
         {/* Original Info Modal (with BYOK additions inside) */}
         <AnimatePresence> {showInfoModal && ( <motion.div className="fixed inset-0 z-[60] bg-black bg-opacity-50 flex items-center justify-center p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowInfoModal(false)}> <motion.div className="bg-white border border-[#e6ddcc] rounded-xl shadow-2xl p-8 pt-6 w-full max-w-md text-center font-serif relative" initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} transition={{ duration: 0.3 }} onClick={e => e.stopPropagation()}> <button onClick={() => setShowInfoModal(false)} className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition" aria-label="Close modal"> <X size={18} /> </button> <h2 className="text-2xl text-[#1a1a1a] mb-3">puffnotes</h2> <AnimatePresence> {apiKeyError && ( <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-md text-xs my-3 text-left flex items-center gap-2 overflow-hidden"> <AlertTriangle size={14} className="flex-shrink-0" /> <span>To keep this AI feature free for everyone, the shared access has limits. Please add your own (also free!) Groq API key below for best results.</span> </motion.div> )} </AnimatePresence> <p className="text-[#6b7280] text-sm leading-relaxed mb-4"> A serene space for note-taking — simple, offline, and distraction-free.<br /> Click the <Wand2 size={14} className="inline mb-0.5 text-[#9a8c73]" /> wand to magically expand and beautify your notes using AI. </p> <div className="text-left text-xs border-t border-gray-200 pt-4 mt-4 space-y-2"> <div className="flex justify-between items-center"> <p className="text-gray-600 font-medium flex items-center gap-1.5"> <KeyRound size={14} /> <span>Personal AI key (Recommended)</span> </p> <button onClick={() => setShowApiKeyInput(prev => !prev)} className="text-gray-500 hover:text-gray-800 text-xs underline"> {showApiKeyInput ? 'Hide' : 'Add/Edit'} </button> </div> <AnimatePresence> {showApiKeyInput && ( <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden space-y-2"> <p className="text-gray-500 leading-snug"> Add your free Groq API key for unlimited AI use. Get one in seconds at <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer" className="text-gray-500 underline hover:text-orange-400">Groq Console</a>. </p> <div className="flex items-center gap-2"> <input ref={apiKeyInputRef} type="password" placeholder="Paste Groq API Key (gsk_...)" defaultValue={userApiKey} className="flex-grow px-2 py-1 text-xs border border-gray-300 rounded-md outline-none focus:ring-1 focus:ring-blue-300 font-mono" /> <button onClick={() => handleSaveUserApiKey(apiKeyInputRef.current?.value || '')} className="px-3 py-1 text-xs bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 transition text-gray-700 whitespace-nowrap"> Save </button> </div> {apiKeySaveFeedback && ( <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-green-600 text-xs mt-1"> {apiKeySaveFeedback} </motion.p> )} </motion.div> )} </AnimatePresence> </div> <p className="text-[#8c6e54] text-xs italic mt-4 mb-2"> No accounts. No cloud. Just you and your thoughts. </p> <p className="text-[#9c8063] text-xs"> lovingly crafted by <a href="https://rajinkhan.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-orange-200 transition"> Rajin Khan </a> </p> <button onClick={() => setShowInfoModal(false)} className="mt-5 px-5 py-1.5 text-sm bg-[#fff7ee] border border-[#e0ddd5] rounded-full hover:bg-[#f0e9df] transition text-gray-700"> Close </button> <p className="absolute bottom-3 left-1/2 transform -translate-x-1/2 text-[10px] text-gray-500 opacity-50"> Background video via <a href="https://moewalls.com" target="_blank" rel="noopener noreferrer" className="underline">MoeWalls</a> </p> </motion.div> </motion.div> )} </AnimatePresence>
       </div>
