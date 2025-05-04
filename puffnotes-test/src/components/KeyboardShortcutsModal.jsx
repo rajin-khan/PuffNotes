@@ -5,7 +5,7 @@ import { X, Keyboard } from 'lucide-react'; // Import Keyboard icon
 const shortcuts = [
   { action: 'Toggle Editor', keys: 'Cmd/Ctrl + .' },
   { action: 'Toggle Preview', keys: 'Cmd/Ctrl + P' },
-  { action: 'Toggle Focus Mode', keys: 'Cmd/Ctrl + F' },
+  { action: 'Toggle Focus Mode', keys: 'Cmd/Ctrl + Shift + F' },
   { action: 'Beautify Note', keys: 'Cmd/Ctrl + Enter' },
   { action: 'Open Folder/Notes', keys: 'Cmd/Ctrl + O' },
   { action: 'New Note', keys: 'Cmd/Ctrl + K' },
