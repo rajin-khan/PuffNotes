@@ -224,7 +224,7 @@ export default function App() {
        {/* Top-right Buttons Area */}
        <div className="absolute top-4 right-6 z-50 flex items-center space-x-3">
          {/* Onboarding Message */}
-         <AnimatePresence> {(!folderHandle || isFirstSave) && !showInfoModal && ( <motion.span initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3 }} className="font-serif text-sm text-gray-500 mr-3 bg-[#fff7ee] border border-[#e6ddcc] rounded-full px-4 py-1 shadow-sm" > {!folderHandle ? "Select a folder (Cmd + O)" : "Save Note (Cmd + S)"} </motion.span> )} </AnimatePresence>
+         <AnimatePresence> {(!folderHandle || isFirstSave) && !showInfoModal && ( <motion.span initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3 }} className="font-serif text-sm text-gray-500 mr-3 bg-[#fff7ee] border border-[#e6ddcc] rounded-full px-4 py-1 shadow-sm" > {!folderHandle ? "Select a folder (Cmd/Ctrl + O)" : "Save Note (Cmd/Ctrl + S)"} </motion.span> )} </AnimatePresence>
          {/* FAB Container */}
          <div className="flex items-center space-x-3 bg-white/30 backdrop-blur-md px-4 py-2 rounded-full shadow-md border border-[#e6ddcc]">
            {/* Focus Mode Toggle */}
