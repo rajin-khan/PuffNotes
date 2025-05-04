@@ -400,8 +400,8 @@ export default function App() {
         handleSave();
       }
   
-      // Cmd/Ctrl + F → Toggle Focus Mode
-      else if (ctrlOrCmd && e.key.toLowerCase() === 'f') {
+      // Cmd/Ctrl + Shift + F → Toggle Focus Mode
+      else if (ctrlOrCmd && e.shiftKey && e.key.toLowerCase() === 'f') {
         e.preventDefault();
         toggleFocusMode();
       }
