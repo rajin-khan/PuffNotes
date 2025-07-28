@@ -35,7 +35,7 @@ import ThemeSwitcher from './components/ThemeSwitcher';
 const themes = [
   {
     name: 'default',
-    video: '/backgroundsm3.webm',
+    video: '/puff.webm',
     pdf: {
       bg: '#fdfbf7',
       headerText: '#a8a29a',
