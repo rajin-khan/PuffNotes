@@ -202,12 +202,12 @@ export default function App() {
       // Base overrides for colors and borders, using original logic
       const baseOverrides = {
         default: [
-          { selector: '.text-gray-800', color: '#1f2937' },
-          { selector: '.text-gray-600', color: '#4b5563' },
-          { selector: 'blockquote', color: '#4b5563' },
-          { selector: '.border-\\[\\#fff7ee\\]', color: '#fff7ee', styleProp: 'borderColor' },
-          { selector: '.text-\\[\\#0f0a02ff\\]', color: '#0f0a02ff' },
-          { selector: '.bg-\\[\\#fff7ee\\]', color: '#fff7ee', styleProp: 'backgroundColor' }, // For inline code
+          { selector: '.text-gray-800', color: '#26140cff' },
+          { selector: '.text-gray-600', color: '#4f3b2aff' },
+          { selector: 'blockquote', color: '#63514bff' },
+          { selector: '.border-\\[\\#fdfbf7\\]', color: '#fdfbf7', styleProp: 'borderColor' },
+          { selector: '.text-\\[\\#0f0a02ff\\]', color: '#181003ff' },
+          { selector: '.bg-\\[\\#fdfbf7\\]', color: '#fdfbf7', styleProp: 'backgroundColor' }, // For inline code
         ],
         galaxy: [
           { selector: '.text-gray-200', color: '#e5e7eb' },
