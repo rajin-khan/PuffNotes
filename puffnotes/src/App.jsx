@@ -463,7 +463,7 @@ export default function App() {
       {!window.showDirectoryPicker && ( <div className="fixed top-0 left-0 right-0 bg-red-50 text-red-800 text-sm font-serif px-4 py-2 text-center z-50 shadow"> PuffNotes requires a desktop browser (like Chrome or Edge) for full file system access. Basic editing is available. </div> )}
 
       {/* Original Background Video */}
-      <video autoPlay muted loop playsInline preload="auto" className="fixed top-0 left-0 w-full h-full object-cover z-[10] pointer-events-none"> <source src="/backgroundsm3.webm" type="video/webm" /> Your browser does not support the video tag. </video>
+      <video autoPlay muted loop playsInline preload="auto" className="fixed top-0 left-0 w-full h-full object-cover z-[10] pointer-events-none"> <source src="/puff.webm" type="video/webm" /> Your browser does not support the video tag. </video>
 
       {/* Original Top-right Buttons Area */}
       <div className="absolute top-4 right-6 z-50 flex items-center space-x-3">
