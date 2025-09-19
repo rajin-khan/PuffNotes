@@ -1,7 +1,6 @@
 // src/components/LandingPage.jsx
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react'; // <-- Import useRef and useEffect
 import { AnimatePresence, motion } from 'framer-motion';
-// THE FIX: Add FileText to the import list
 import { Wifi, FolderLock, ArrowRight, ArrowLeft, Cloud, MonitorSmartphone, ShieldCheck, FileText } from 'lucide-react';
 
 // Animation variants for the content inside
@@ -21,6 +20,18 @@ const containerVariants = {
 
 export default function LandingPage({ onStartOffline, onStartOnline, isOnlineLoading }) {
   const [showInfo, setShowInfo] = useState(false);
+  
+  // AUTOPLAY FIX: Create a ref for the video element
+  const videoRef = useRef(null);
+
+  // AUTOPLAY FIX: Add a useEffect to programmatically play the video
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.play().catch(error => {
+        console.warn("Video autoplay was prevented by the browser:", error);
+      });
+    }
+  }, []);
 
   return (
     <motion.div
@@ -30,8 +41,19 @@ export default function LandingPage({ onStartOffline, onStartOnline, isOnlineLoa
       exit={{ opacity: 0 }}
     >
       {/* Background Video */}
-      <video autoPlay muted loop playsInline preload="auto" className="absolute top-0 left-0 h-full w-full object-cover">
+      <video
+        // AUTOPLAY FIX: Attach the ref
+        ref={videoRef}
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="auto"
+        className="absolute top-0 left-0 h-full w-full object-cover"
+      >
+        {/* AUTOPLAY FIX: Add the MP4 source for Safari compatibility */}
         <source src="/puff.webm" type="video/webm" />
+        <source src="/puff.mp4" type="video/mp4" />
       </video>
       <div className="absolute inset-0 h-full w-full bg-black/70"></div>
 
