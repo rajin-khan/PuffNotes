@@ -10,7 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "firebase": "^12.3.0",
     "framer-motion": "^12.9.4",
+    "google-auth-library": "^10.3.0",
     "highlight.js": "^11.11.1",
     "html2canvas": "^1.4.1",
     "html2pdf.js": "^0.10.3",
