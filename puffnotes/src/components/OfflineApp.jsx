@@ -13,12 +13,11 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import * as ReactDOM from 'react-dom/client';
 import KeyboardShortcutsModal from './KeyboardShortcutsModal';
-import OnboardingModal from './OnboardingModal'; // <-- IMPORT ONBOARDING
+import OnboardingModal from './OnboardingModal';
 
 const USER_API_KEY_STORAGE_KEY = 'puffnotes_groqUserApiKey_v1';
 const DEFAULT_GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || '';
 
-// --- ONBOARDING STEPS FOR OFFLINE MODE ---
 const offlineOnboardingSteps = [
   {
     title: "Welcome to Your Editor",
@@ -56,14 +55,11 @@ const offlineOnboardingSteps = [
   },
 ];
 
-
 export default function OfflineApp({ onGoToLanding }) {
-  // --- ONBOARDING STATE ---
   const [showOnboarding, setShowOnboarding] = useState(
     () => !localStorage.getItem('puffnotes_onboarding_offline_complete')
   );
 
-  // --- All other existing state remains unchanged ---
   const [userApiKey, setUserApiKey] = useState(() => localStorage.getItem(USER_API_KEY_STORAGE_KEY) || '');
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   const [apiKeyError, setApiKeyError] = useState(false);
@@ -394,13 +390,12 @@ export default function OfflineApp({ onGoToLanding }) {
   }, [ note, isBeautifying, showBeautifyControls, handleBeautify, handleExportPdf, handleNewNote, handleSave, toggleFocusMode, handleFolderButton, setShowShortcutsModal ]);
 
   return (
-      <div className="min-h-screen bg-[#fdf6ec] relative overflow-hidden transition-opacity duration-500 opacity-100">
-        <AnimatePresence>
-          {showOnboarding && <OnboardingModal steps={offlineOnboardingSteps} onFinish={handleFinishOnboarding} />}
-        </AnimatePresence>
-        <div className={`min-h-screen bg-[#fdf6ec] relative overflow-hidden transition-all duration-300 ${showOnboarding ? 'blur-sm scale-105' : 'blur-0 scale-100'}`}></div>
+    <>
+      <AnimatePresence>
+        {showOnboarding && <OnboardingModal steps={offlineOnboardingSteps} onFinish={handleFinishOnboarding} />}
+      </AnimatePresence>
+      <div className={`min-h-screen bg-[#fdf6ec] relative overflow-hidden transition-all duration-300 ${showOnboarding ? 'blur-sm scale-105' : 'blur-0 scale-100'}`}>
         <div className="absolute top-4 left-4 z-50 flex items-center space-x-2"> 
-          {/* --- ADD THIS BUTTON --- */}
           <motion.button onClick={onGoToLanding} className="opacity-70 hover:opacity-90 transition p-1 rounded-full border border-gray-300 shadow-sm" title="Back to Home" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
             <Home size={17} strokeWidth={2} className="text-gray-200" />
           </motion.button>
@@ -493,5 +488,6 @@ export default function OfflineApp({ onGoToLanding }) {
           </div>
         </motion.div>
     </div>
-  );
+  </>
+);
 }

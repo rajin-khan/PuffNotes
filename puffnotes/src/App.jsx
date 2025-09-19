@@ -1,25 +1,19 @@
 // src/App.jsx
 import { useState, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
-
-// Component Imports
 import OfflineApp from './components/OfflineApp';
 import OnlineApp from './components/OnlineApp';
 import LandingPage from './components/LandingPage';
 import OnlineSetupModal from './components/OnlineSetupModal';
-
-// Library Imports
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth, signInWithGoogle, signOut } from './lib/firebase';
 import { findOrCreatePuffnotesFolder } from './lib/googleDrive';
 
-
 export default function App() {
-  const [mode, setMode] = useState('landing'); // 'landing', 'offline', 'online'
+  const [mode, setMode] = useState('landing');
   const [user, setUser] = useState(null);
   const [accessToken, setAccessToken] = useState(null);
   const [folderId, setFolderId] = useState(null);
-  
   const [isOnlineLoading, setIsOnlineLoading] = useState(false);
   const [showSetupModal, setShowSetupModal] = useState(false);
   const [setupSteps, setSetupSteps] = useState([
@@ -29,7 +23,6 @@ export default function App() {
   ]);
 
   useEffect(() => {
-    // Listen for auth state changes
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
@@ -37,7 +30,6 @@ export default function App() {
         setUser(null);
         setAccessToken(null);
         setFolderId(null);
-        // If user signs out, return to landing page
         if (mode === 'online') {
             setMode('landing');
         }
@@ -53,18 +45,14 @@ export default function App() {
   const handleStartOnline = async () => {
     setIsOnlineLoading(true);
     setShowSetupModal(true);
-     // Reset steps for a clean modal on each attempt
     setSetupSteps([
         { label: 'Authenticating...', status: 'loading' },
         { label: 'Accessing Google Drive...', status: 'loading' },
         { label: 'Finding puffnotes folder...', status: 'loading' },
     ]);
-    
     try {
-      // Step 1: Sign in
       const { user, accessToken } = await signInWithGoogle();
       if (!user || !accessToken) {
-        // User cancelled popup
         setShowSetupModal(false);
         setIsOnlineLoading(false);
         return;
@@ -76,8 +64,6 @@ export default function App() {
       });
       setUser(user);
       setAccessToken(accessToken);
-
-      // Step 2: Access & Find/Create Folder
       setSetupSteps(prev => {
           const newSteps = [...prev];
           newSteps[1].status = 'complete';
@@ -85,24 +71,20 @@ export default function App() {
       });
       const driveFolderId = await findOrCreatePuffnotesFolder(accessToken);
       setFolderId(driveFolderId);
-      
       setSetupSteps(prev => {
         const newSteps = [...prev];
         newSteps[2].status = 'complete';
         return newSteps;
       });
-
-      // All done, transition to app
       setTimeout(() => {
         setShowSetupModal(false);
         setMode('online');
         setIsOnlineLoading(false);
       }, 1000);
-
     } catch (error) {
       console.error("Online setup failed:", error);
       alert(`Error during setup: ${error.message}`);
-      await signOut(); // Sign out on failure
+      await signOut();
       setShowSetupModal(false);
       setIsOnlineLoading(false);
     }
@@ -111,13 +93,11 @@ export default function App() {
   const handleSignOut = async () => {
       try {
           await signOut();
-          // The onAuthStateChanged listener will handle resetting state and mode
       } catch (error) {
           console.error("Sign out error", error);
       }
   };
 
-  // --- NEW: Function to return to the landing page ---
   const handleGoToLanding = () => {
     setMode('landing');
   };
@@ -131,10 +111,11 @@ export default function App() {
             accessToken={accessToken} 
             folderId={folderId} 
             onSignOut={handleSignOut}
+            // --- THE FIX: Pass the function here ---
+            onGoToLanding={handleGoToLanding} 
           />
         ) : null;
       case 'offline':
-        // --- UPDATED: Pass the new function as a prop ---
         return <OfflineApp onGoToLanding={handleGoToLanding} />;
       case 'landing':
       default:
