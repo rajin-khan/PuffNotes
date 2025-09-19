@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import {
   FilePlus, FolderOpen, ChevronDown, ChevronUp, X, Wand2, Check,
   RotateCw, XCircle, CheckCircle, Info, KeyRound, Eye, Pen,
-  Keyboard, LogOut, AlertTriangle, Loader2, Home // <-- Import Home icon
+  Keyboard, LogOut, AlertTriangle, Loader2, Home,
 } from 'lucide-react';
 import { beautifyNoteWithGroq } from '../lib/groq';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -56,13 +56,11 @@ const onlineOnboardingSteps = [
   },
 ];
 
-// --- THE FIX: Accept onGoToLanding as a prop ---
 export default function OnlineApp({ user, accessToken, folderId, onSignOut, onGoToLanding }) {
   const [showOnboarding, setShowOnboarding] = useState(
     () => !localStorage.getItem('puffnotes_onboarding_online_complete')
   );
 
-  // ... (all other state remains identical, no changes needed here) ...
   const [userApiKey, setUserApiKey] = useState(() => localStorage.getItem(USER_API_KEY_STORAGE_KEY) || '');
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   const [apiKeyError, setApiKeyError] = useState(false);
@@ -88,14 +86,29 @@ export default function OnlineApp({ user, accessToken, folderId, onSignOut, onGo
   const [isLoadingNote, setIsLoadingNote] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const noteContentRef = useRef(note);
-  
+
+  // AUTOPLAY FIX: Create a ref for the video element
+  const videoRef = useRef(null);
+
   const handleFinishOnboarding = () => {
     localStorage.setItem('puffnotes_onboarding_online_complete', 'true');
     setShowOnboarding(false);
   };
   
-  // ... (all other functions remain identical, no changes needed here) ...
   useEffect(() => { noteContentRef.current = note; }, [note]);
+
+  // AUTOPLAY FIX: Add a useEffect to programmatically play the video
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.play().catch(error => {
+        // This catch block is important. It prevents console errors if the browser
+        // fully blocks autoplay, which can happen in Low Power Mode, etc.
+        console.warn("Video autoplay was prevented by the browser:", error);
+      });
+    }
+  }, []);
+
+  // --- All other functions remain unchanged ---
   const refreshFileList = async () => { try { const files = await listNotes(accessToken, folderId); setFileList(files || []); return files; } catch (err) { console.error("Failed to refresh file list:", err); setFileList([]); return []; } };
   const handleOpenFile = async (file) => { if (!file || isLoadingNote) return; setIsLoadingNote(true); setShowFileModal(false); try { const content = await getNoteContent(accessToken, file.id); const baseName = file.name.replace(/\.md$/, ""); setNote(content); noteContentRef.current = content; setNoteName(baseName); setActiveNoteId(file.id); setPreviewNote(""); setShowBeautifyControls(false); setOriginalNote(""); setIsPreviewMode(false); setSaveStatus('saved'); } catch (err) { console.error("Error opening file:", err); alert(`Failed to open file: ${file.name}. Error: ${err.message}`); } finally { setIsLoadingNote(false); } };
   const handleNewNote = () => { if (saveStatus === 'saving') return; setNote(""); noteContentRef.current = ""; setNoteName("untitled"); setActiveNoteId(null); setPreviewNote(""); setShowBeautifyControls(false); setOriginalNote(""); setIsPreviewMode(false); setSaveStatus('unsaved'); };
@@ -121,7 +134,6 @@ export default function OnlineApp({ user, accessToken, folderId, onSignOut, onGo
       </AnimatePresence>
       <div className={`min-h-screen bg-[#fdf6ec] relative overflow-hidden transition-all duration-300 ${showOnboarding ? 'blur-sm scale-105' : 'blur-0 scale-100'}`}>
         <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-50 flex items-center space-x-2">
-            {/* --- THE FIX: Add the Home button here --- */}
             <motion.button onClick={onGoToLanding} className="opacity-70 hover:opacity-90 transition p-1 rounded-full border border-gray-300 shadow-sm" title="Back to Home" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
                 <Home size={17} strokeWidth={2} className="text-gray-200" />
             </motion.button>
@@ -133,8 +145,22 @@ export default function OnlineApp({ user, accessToken, folderId, onSignOut, onGo
                 <LogOut size={17} strokeWidth={2} className="text-gray-200" />
             </motion.button>
         </div>
-        {/* ... The rest of the JSX is identical and correct ... */}
-        <video autoPlay muted loop playsInline preload="auto" className="fixed top-0 left-0 w-full h-full object-cover z-[10] pointer-events-none"> <source src="/puff.webm" type="video/webm" /> Your browser does not support the video tag. </video>
+
+        {/* --- AUTOPLAY FIX: Update the video tag --- */}
+        <video 
+          ref={videoRef}
+          autoPlay 
+          muted 
+          loop 
+          playsInline
+          preload="auto" 
+          className="fixed top-0 left-0 w-full h-full object-cover z-[10] pointer-events-none"
+        >
+          <source src="/puff.webm" type="video/webm" />
+          <source src="/puff.mp4" type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
+
         <div className="absolute top-3 right-3 sm:top-4 sm:right-6 z-50 flex items-center space-x-2 sm:space-x-3">
             <div className="flex items-center space-x-2 sm:space-x-3 px-3 sm:px-4 py-2 rounded-full shadow-md border border-[#e6ddcc]">
                 <button onClick={toggleFocusMode} className={`opacity-60 hover:opacity-100 transition ${focusMode ? 'text-orange-200' : 'text-gray-600'}`} title={focusMode ? "Exit Focus Mode" : "Focus Mode"}> <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"> <circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="4" /> </svg> </button>
