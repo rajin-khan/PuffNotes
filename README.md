@@ -97,7 +97,7 @@ https://github.com/user-attachments/assets/78cfc0b5-96cf-47b4-9ce6-c689f98be699
 
 ---
 
-## 🚀 Getting Started
+## 🏁 Getting Started
 
 <div align="center">
 
