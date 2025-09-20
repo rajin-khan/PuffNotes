@@ -111,28 +111,39 @@ https://github.com/user-attachments/assets/78cfc0b5-96cf-47b4-9ce6-c689f98be699
 
 ---
 
-## 🗺️ What's Next
+## 🔮 Roadmap
 
-Our journey toward the perfect thinking tool:
+The journey toward the perfect thinking tool:
 
-- [x] ✨ AI-powered content enhancement
-- [x] 📄 Professional PDF export
-- [x] ☁️ Google Drive synchronization
-- [x] 💻 Offline-first architecture
-- [ ] 🎨 **Beautiful themes** (dark mode, sepia, retro vibes)
-- [ ] 🤖 **Custom AI prompts** for specialized workflows  
-- [ ] 🖼️ **Drag-and-drop images** with smart positioning
-- [ ] 🏷️ **Smart organization** with tags and folders
-- [ ] 📱 **Mobile companion app**
-- [ ] 🔗 **Integration ecosystem** with your favorite tools (Import from Notion, Obsidian, and more)
+| Feature                                                                                    | Status      |
+|--------------------------------------------------------------------------------------------|-------------|
+| ✅ AI-powered content enhancement                                                          | Completed   |
+| ✅ Professional PDF export                                                                 | Completed   |
+| ✅ Google Drive synchronization                                                            | Completed   |
+| ✅ Offline-first architecture                                                              | Completed   |
+| ⏳ Beautiful themes                                                                        | In Progress |
+| ⏳ Custom AI prompts                                                                       | Planning    |
+| ⏳ Drag-and-drop images                                                                    | Planning    |
+| ⏳ Smart organization                                                                      | Planning    |
+| ⏳ Mobile companion app                                                                    | Planning    |
+| ⏳ Integration ecosystem with your favorite tools (Import from Notion, Obsidian, and more) | Planning    |
 
 ---
 
-## 💫 Philosophy
+## **👨‍💻 Dev Team**
 
-Puffnotes believes that **good tools disappear**. They don't demand attention or force you into rigid workflows. Instead, they amplify your natural thinking process, making you more creative and productive without getting in the way.
+Just me, actually.
 
-We're building more than just another note-taking app. We're crafting a **digital sanctuary** where ideas flourish, thoughts find structure, and creativity meets intelligence.
+| Name                      | Institution             | ID | GitHub | Followers |
+|---------------------------|-------------------------|--  |--------|------|
+| **Rajin Khan**            | North South University | 2212708042 | [![Rajin's GitHub](https://img.shields.io/badge/-rajin--khan-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/rajin-khan) | ![Followers](https://img.shields.io/github/followers/rajin-khan?label=Follow&style=social) |
+
+---
+
+I believe that **good tools disappear**. They don't demand attention or force you into rigid workflows. Instead, they amplify your natural thinking process, making you more creative and productive without getting in the way.
+That's what puffnotes is meant to be.
+
+### ⭐ **Star this repo if you want more cool stuff like this!**
 
 ---
 
