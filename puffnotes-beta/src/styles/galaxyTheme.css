@@ -1,0 +1,381 @@
+/* Galaxy Theme Design System for PuffNotes Editor */
+
+:root {
+  /* Galaxy Background Colors */
+  --galaxy-dark: #0a0e27;
+  --galaxy-navy: #0f1642;
+  --galaxy-deep: #0d1235;
+  --galaxy-space: #1a1f3a;
+  --galaxy-midnight: #0c1129;
+  
+  /* Galaxy Accent Colors */
+  --galaxy-purple: #9b59b6;
+  --galaxy-pink: #e74c3c;
+  --galaxy-blue: #3498db;
+  --galaxy-cyan: #1abc9c;
+  --galaxy-accent: #8e44ad;
+  --galaxy-highlight: #f39c12;
+  
+  /* Galaxy Text Colors */
+  --galaxy-white: #e8eaf6;
+  --galaxy-light: #b8bfde;
+  --galaxy-muted: #8b9dc3;
+  --galaxy-subtle: #6c7b95;
+  --galaxy-dim: #5a6b7d;
+  
+  /* Galaxy Effects */
+  --galaxy-glow-purple: rgba(155, 89, 182, 0.3);
+  --galaxy-glow-pink: rgba(231, 76, 60, 0.2);
+  --galaxy-glow-blue: rgba(52, 152, 219, 0.25);
+  --galaxy-glow-cyan: rgba(26, 188, 156, 0.2);
+  --galaxy-shadow: rgba(10, 14, 39, 0.4);
+  --galaxy-border: #2d3561;
+  --galaxy-border-light: #4a5178;
+  --galaxy-border-glow: #6c5ce7;
+  
+  /* Galaxy Gradients */
+  --galaxy-gradient: linear-gradient(135deg, var(--galaxy-dark) 0%, var(--galaxy-navy) 100%);
+  --galaxy-gradient-reverse: linear-gradient(135deg, var(--galaxy-navy) 0%, var(--galaxy-dark) 100%);
+  --galaxy-purple-gradient: linear-gradient(135deg, var(--galaxy-purple) 0%, var(--galaxy-pink) 100%);
+  --galaxy-blue-gradient: linear-gradient(135deg, var(--galaxy-blue) 0%, var(--galaxy-cyan) 100%);
+  --galaxy-space-gradient: linear-gradient(135deg, rgba(10, 14, 39, 0.95) 0%, rgba(15, 22, 66, 0.90) 50%, rgba(10, 14, 39, 0.95) 100%);
+  --galaxy-neon-shadow: 0 20px 40px rgba(155, 89, 182, 0.15), 0 8px 16px rgba(231, 76, 60, 0.1);
+  
+  /* Typography */
+  --font-serif: 'EB Garamond', serif;
+  --font-mono: 'Space Mono', monospace;
+  --font-sans: 'Inter', sans-serif;
+}
+
+/* Galaxy Typography Scale */
+.galaxy-headline-xl {
+  font-family: var(--font-serif);
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--galaxy-white);
+  letter-spacing: -0.02em;
+}
+
+.galaxy-headline-lg {
+  font-family: var(--font-serif);
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--galaxy-white);
+  letter-spacing: -0.01em;
+}
+
+.galaxy-headline-md {
+  font-family: var(--font-serif);
+  font-size: clamp(1.5rem, 3vw, 2.25rem);
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--galaxy-white);
+}
+
+.galaxy-headline-sm {
+  font-family: var(--font-serif);
+  font-size: clamp(1.25rem, 2.5vw, 1.75rem);
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--galaxy-white);
+}
+
+.galaxy-body-lg {
+  font-family: var(--font-sans);
+  font-size: 1.125rem;
+  line-height: 1.7;
+  color: var(--galaxy-light);
+  font-weight: 400;
+}
+
+.galaxy-body {
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--galaxy-light);
+  font-weight: 400;
+}
+
+.galaxy-body-sm {
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--galaxy-muted);
+  font-weight: 400;
+}
+
+.galaxy-handwritten {
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  color: var(--galaxy-muted);
+  font-weight: 400;
+  font-style: italic;
+}
+
+/* Galaxy Backgrounds */
+.galaxy-bg-dark {
+  background-color: var(--galaxy-dark);
+}
+
+.galaxy-bg-navy {
+  background-color: var(--galaxy-navy);
+}
+
+.galaxy-bg-deep {
+  background-color: var(--galaxy-deep);
+}
+
+.galaxy-bg-space {
+  background-color: var(--galaxy-space);
+}
+
+.galaxy-bg-midnight {
+  background-color: var(--galaxy-midnight);
+}
+
+.galaxy-bg-gradient {
+  background: var(--galaxy-gradient);
+}
+
+.galaxy-bg-gradient-reverse {
+  background: var(--galaxy-gradient-reverse);
+}
+
+.galaxy-bg-space-overlay {
+  background: var(--galaxy-space-gradient);
+}
+
+/* Galaxy Shadows and Effects */
+.galaxy-shadow-sm {
+  box-shadow: 0 2px 8px var(--galaxy-shadow);
+}
+
+.galaxy-shadow {
+  box-shadow: 0 4px 16px var(--galaxy-shadow);
+}
+
+.galaxy-shadow-lg {
+  box-shadow: 0 8px 32px var(--galaxy-shadow);
+}
+
+.galaxy-shadow-neon {
+  box-shadow: var(--galaxy-neon-shadow);
+}
+
+.galaxy-glow-purple {
+  box-shadow: 0 0 20px var(--galaxy-glow-purple);
+}
+
+.galaxy-glow-pink {
+  box-shadow: 0 0 20px var(--galaxy-glow-pink);
+}
+
+.galaxy-glow-blue {
+  box-shadow: 0 0 20px var(--galaxy-glow-blue);
+}
+
+.galaxy-glow-lg {
+  box-shadow: 0 0 40px var(--galaxy-glow-purple);
+}
+
+/* Galaxy Borders */
+.galaxy-border {
+  border: 1px solid var(--galaxy-border);
+}
+
+.galaxy-border-light {
+  border: 1px solid var(--galaxy-border-light);
+}
+
+.galaxy-border-glow {
+  border: 2px solid var(--galaxy-border-glow);
+}
+
+/* Galaxy Button Styles */
+.galaxy-btn-primary {
+  background: var(--galaxy-purple-gradient);
+  color: var(--galaxy-white);
+  border: none;
+  padding: 0.875rem 2rem;
+  border-radius: 1rem;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: var(--galaxy-shadow);
+}
+
+.galaxy-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--galaxy-shadow-lg), var(--galaxy-glow-purple);
+}
+
+.galaxy-btn-secondary {
+  background: transparent;
+  color: var(--galaxy-light);
+  border: 2px solid var(--galaxy-border);
+  padding: 0.875rem 2rem;
+  border-radius: 1rem;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.galaxy-btn-secondary:hover {
+  background: var(--galaxy-navy);
+  border-color: var(--galaxy-purple);
+  transform: translateY(-2px);
+  box-shadow: var(--galaxy-shadow);
+}
+
+/* Galaxy Card Styles */
+.galaxy-card {
+  background: var(--galaxy-navy);
+  border: 1px solid var(--galaxy-border-light);
+  border-radius: 1.5rem;
+  padding: 2rem;
+  box-shadow: var(--galaxy-shadow-sm);
+  transition: all 0.3s ease;
+}
+
+.galaxy-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--galaxy-shadow-lg);
+  border-color: var(--galaxy-border);
+}
+
+.galaxy-card-dark {
+  background: var(--galaxy-dark);
+}
+
+.galaxy-card-deep {
+  background: var(--galaxy-deep);
+}
+
+/* Galaxy Text Colors */
+.galaxy-text-white {
+  color: var(--galaxy-white);
+}
+
+.galaxy-text-light {
+  color: var(--galaxy-light);
+}
+
+.galaxy-text-muted {
+  color: var(--galaxy-muted);
+}
+
+.galaxy-text-subtle {
+  color: var(--galaxy-subtle);
+}
+
+.galaxy-text-dim {
+  color: var(--galaxy-dim);
+}
+
+.galaxy-text-purple {
+  color: var(--galaxy-purple);
+}
+
+.galaxy-text-pink {
+  color: var(--galaxy-pink);
+}
+
+.galaxy-text-blue {
+  color: var(--galaxy-blue);
+}
+
+.galaxy-text-cyan {
+  color: var(--galaxy-cyan);
+}
+
+.galaxy-text-accent {
+  color: var(--galaxy-accent);
+}
+
+.galaxy-text-highlight {
+  color: var(--galaxy-highlight);
+}
+
+/* Galaxy Animations */
+@keyframes galaxyFloat {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes galaxyGlow {
+  0%, 100% { box-shadow: 0 0 20px var(--galaxy-glow-purple); }
+  50% { box-shadow: 0 0 40px var(--galaxy-glow-purple); }
+}
+
+@keyframes galaxyFadeIn {
+  from { 
+    opacity: 0; 
+    transform: translateY(20px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+.galaxy-float {
+  animation: galaxyFloat 3s ease-in-out infinite;
+}
+
+.galaxy-glow-pulse {
+  animation: galaxyGlow 2s ease-in-out infinite;
+}
+
+.galaxy-fade-in {
+  animation: galaxyFadeIn 0.6s ease-out;
+}
+
+/* Galaxy Neon Texture Effect */
+.galaxy-neon-texture {
+  background-image: 
+    radial-gradient(circle at 1px 1px, rgba(155, 89, 182, 0.1) 1px, transparent 0);
+  background-size: 20px 20px;
+}
+
+/* Galaxy Responsive Utilities */
+@media (max-width: 768px) {
+  .galaxy-card {
+    padding: 1.5rem;
+  }
+  
+  .galaxy-btn-primary,
+  .galaxy-btn-secondary {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.9rem;
+  }
+}
+
+/* Galaxy Focus States */
+.galaxy-focus {
+  outline: 2px solid var(--galaxy-purple);
+  outline-offset: 2px;
+}
+
+/* Galaxy Scrollbar */
+.galaxy-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.galaxy-scrollbar::-webkit-scrollbar-track {
+  background: var(--galaxy-navy);
+}
+
+.galaxy-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--galaxy-border);
+  border-radius: 4px;
+}
+
+.galaxy-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--galaxy-purple);
+}
