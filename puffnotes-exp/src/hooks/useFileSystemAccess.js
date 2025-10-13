@@ -3,8 +3,16 @@ import { useState } from 'react'
 export default function useFileSystemAccess() {
 
   if (typeof window === 'undefined' || !window.showDirectoryPicker) {
-      alert("PuffNotes requires a desktop Chromium browser (like Chrome or Edge). This browser doesn't support local folder access.")
-      throw new Error("File System Access API not supported")
+      // Return dummy functions to prevent crashes in unsupported environments
+      console.warn("File System Access API not supported in this browser.");
+      return {
+          folderHandle: null,
+          pickFolder: async () => console.warn("Not supported."),
+          saveNote: async () => console.warn("Not supported."),
+          listFiles: async () => [],
+          loadNote: async () => null,
+          deleteNote: async () => console.warn("Not supported."),
+      };
     }    
 
   const [folderHandle, setFolderHandle] = useState(null)
@@ -24,7 +32,6 @@ export default function useFileSystemAccess() {
   
     let finalName = filename
   
-    // Only perform deduplication on first save
     if (isFirstSave) {
       if (await fileExists(finalName)) {
         const base = filename.replace(/\.md$/, "")
@@ -41,7 +48,7 @@ export default function useFileSystemAccess() {
       const writable = await fileHandle.createWritable()
       await writable.write(content)
       await writable.close()
-      return finalName // return what was saved
+      return finalName
     } catch (err) {
       console.error(`Failed to save "${finalName}":`, err)
       return null
@@ -57,7 +64,6 @@ export default function useFileSystemAccess() {
     return false
   }
   
-
   const loadNote = async (filename) => {
     if (!folderHandle) return null
     const fileHandle = await folderHandle.getFileHandle(filename)
@@ -66,7 +72,6 @@ export default function useFileSystemAccess() {
     return text
   }  
   
-
   const listFiles = async () => {
     if (!folderHandle) return []
     const files = []
@@ -78,5 +83,17 @@ export default function useFileSystemAccess() {
     return files
   }
 
-  return { folderHandle, pickFolder, saveNote, listFiles, loadNote }
+  // --- NEW: Function to delete a file ---
+  const deleteNote = async (filename) => {
+    if (!folderHandle || !filename) return false;
+    try {
+      await folderHandle.removeEntry(filename);
+      return true;
+    } catch (err) {
+      console.error(`Failed to delete "${filename}":`, err);
+      return false;
+    }
+  };
+
+  return { folderHandle, pickFolder, saveNote, listFiles, loadNote, deleteNote }
 }

@@ -1,44 +1,79 @@
-// src/components/ThemeSwitcher.jsx
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { THEMES, getNextTheme, getPreviousTheme } from '../lib/themeManager';
 
-export default function ThemeSwitcher({ onPrev, onNext, theme }) {
-  const iconColor = theme === 'default' ? 'text-gray-400' : 'text-gray-500';
-  const hoverColor = theme === 'default' ? 'hover:text-gray-800' : 'hover:text-gray-200';
-  const bgColor = theme === 'default' ? 'bg-white/30' : 'bg-black/20';
-  const hoverBg = theme === 'default' ? 'hover:bg-white/70' : 'hover:bg-black/50';
+const ThemeSwitcher = ({ currentTheme, onThemeChange }) => {
+  const handlePreviousTheme = () => {
+    const prevTheme = getPreviousTheme(currentTheme);
+    onThemeChange(prevTheme);
+  };
+
+  const handleNextTheme = () => {
+    const nextTheme = getNextTheme(currentTheme);
+    onThemeChange(nextTheme);
+  };
+
+  const getThemeIcon = (theme) => {
+    switch (theme) {
+      case THEMES.WARM:
+        return '☀️';
+      case THEMES.GALAXY:
+        return '🌌';
+      default:
+        return '☀️';
+    }
+  };
+
+  const getThemeName = (theme) => {
+    switch (theme) {
+      case THEMES.WARM:
+        return 'Warm';
+      case THEMES.GALAXY:
+        return 'Galaxy';
+      default:
+        return 'Warm';
+    }
+  };
 
   return (
     <>
-      {/* Previous Theme Button */}
+      {/* Left Theme Button */}
       <motion.button
-        onClick={onPrev}
-        className={`fixed left-2 top-1/2 -translate-y-1/2 z-50 p-2 rounded-full backdrop-blur-sm transition-colors ${bgColor} ${hoverBg}`}
-        title="Previous Theme"
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 0.6, x: 0 }}
-        exit={{ opacity: 0, x: -20 }}
-        whileHover={{ opacity: 1, scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-        transition={{ duration: 0.3 }}
+        onClick={handlePreviousTheme}
+        className={`
+          fixed left-2 top-1/2 transform -translate-y-1/2 z-50
+          p-2 rounded-full transition-all duration-200
+          ${currentTheme === THEMES.GALAXY 
+            ? 'text-[#6c7b95] hover:text-[#b8bfde] hover:bg-[#2d3561]/30 bg-[#0f1642]/20' 
+            : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100/50 bg-white/20'
+          }
+        `}
+        title={`Switch to ${getThemeName(getPreviousTheme(currentTheme))} theme`}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
       >
-        <ChevronLeft size={24} className={`${iconColor} ${hoverColor} transition-colors`} />
+        <ChevronLeft size={16} strokeWidth={1.5} />
       </motion.button>
 
-      {/* Next Theme Button */}
+      {/* Right Theme Button */}
       <motion.button
-        onClick={onNext}
-        className={`fixed right-2 top-1/2 -translate-y-1/2 z-50 p-2 rounded-full backdrop-blur-sm transition-colors ${bgColor} ${hoverBg}`}
-        title="Next Theme"
-        initial={{ opacity: 0, x: 20 }}
-        animate={{ opacity: 0.6, x: 0 }}
-        exit={{ opacity: 0, x: 20 }}
-        whileHover={{ opacity: 1, scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-        transition={{ duration: 0.3 }}
+        onClick={handleNextTheme}
+        className={`
+          fixed right-2 top-1/2 transform -translate-y-1/2 z-50
+          p-2 rounded-full transition-all duration-200
+          ${currentTheme === THEMES.GALAXY 
+            ? 'text-[#6c7b95] hover:text-[#b8bfde] hover:bg-[#2d3561]/30 bg-[#0f1642]/20' 
+            : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100/50 bg-white/20'
+          }
+        `}
+        title={`Switch to ${getThemeName(getNextTheme(currentTheme))} theme`}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
       >
-        <ChevronRight size={24} className={`${iconColor} ${hoverColor} transition-colors`} />
+        <ChevronRight size={16} strokeWidth={1.5} />
       </motion.button>
     </>
   );
-}
+};
+
+export default ThemeSwitcher;

@@ -32,7 +32,7 @@ export async function beautifyNoteWithGroq(note, apiKey) {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          model: "llama3-70b-8192", // Updated model example - use your preferred one
+          model: "llama-3.3-70b-versatile", // Updated model example - use your preferred one
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: note }
