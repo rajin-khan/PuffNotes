@@ -1,0 +1,403 @@
+/* Warm Theme Design System for PuffNotes Marketing */
+
+:root {
+  /* Background Colors */
+  --warm-cream: #FFF8F0;
+  --warm-white: #FAF6F1;
+  --light-peach: #FFF4E6;
+  --soft-amber-bg: #FDF6EC;
+  --warm-beige: #F5F1E8;
+  --coffee-cream: #F5F1EB;
+  --latte-foam: #F7F3ED;
+  --parchment: #FDFCF8;
+  
+  /* Accent Colors */
+  --burnt-orange: #E07B53;
+  --terracotta: #C77B5C;
+  --soft-amber: #F4A259;
+  --dusty-rose: #D4A5A5;
+  --warm-gold: #D4A574;
+  --coffee-brown: #8B4513;
+  --espresso: #6B4423;
+  --caramel: #D2691E;
+  --cinnamon: #D2691E;
+  
+  /* Text Colors */
+  --warm-dark: #3D2E26;
+  --warm-brown: #5C4A40;
+  --warm-mid: #8B7355;
+  --warm-light: #A8A29A;
+  --warm-darker: #2A1F1A;
+  --warm-darkest: #1A1512;
+  
+  /* Effects */
+  --warm-shadow: rgba(61, 46, 38, 0.1);
+  --warm-glow: rgba(224, 123, 83, 0.3);
+  --warm-border: #E6DDCC;
+  --warm-border-light: #F0E9DF;
+  --warm-dark-shadow: rgba(26, 21, 18, 0.3);
+  --warm-dark-glow: rgba(224, 123, 83, 0.2);
+  
+  /* Gradients */
+  --warm-gradient: linear-gradient(135deg, var(--warm-cream) 0%, var(--light-peach) 100%);
+  --warm-gradient-reverse: linear-gradient(135deg, var(--light-peach) 0%, var(--warm-cream) 100%);
+  --terracotta-gradient: linear-gradient(135deg, var(--terracotta) 0%, var(--burnt-orange) 100%);
+  --gold-gradient: linear-gradient(135deg, var(--warm-gold) 0%, var(--terracotta) 100%);
+  --dark-overlay: linear-gradient(135deg, rgba(26, 21, 18, 0.95) 0%, rgba(26, 21, 18, 0.90) 50%, rgba(26, 21, 18, 0.95) 100%);
+  --coffee-gradient: linear-gradient(135deg, #8B4513 0%, #A0522D 50%, #CD853F 100%);
+  --premium-shadow: 0 20px 40px rgba(26, 21, 18, 0.15), 0 8px 16px rgba(26, 21, 18, 0.1);
+  
+  /* Typography */
+  --font-serif: 'EB Garamond', serif;
+  --font-mono: 'Space Mono', monospace;
+  --font-sans: 'Inter', sans-serif;
+}
+
+/* Warm Typography Scale */
+.warm-headline-xl {
+  font-family: var(--font-serif);
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--warm-dark);
+  letter-spacing: -0.02em;
+}
+
+.warm-headline-lg {
+  font-family: var(--font-serif);
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--warm-dark);
+  letter-spacing: -0.01em;
+}
+
+.warm-headline-md {
+  font-family: var(--font-serif);
+  font-size: clamp(1.5rem, 3vw, 2.25rem);
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--warm-dark);
+}
+
+.warm-headline-sm {
+  font-family: var(--font-serif);
+  font-size: clamp(1.25rem, 2.5vw, 1.75rem);
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--warm-dark);
+}
+
+.warm-body-lg {
+  font-family: var(--font-sans);
+  font-size: 1.125rem;
+  line-height: 1.7;
+  color: var(--warm-brown);
+  font-weight: 400;
+}
+
+.warm-body {
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--warm-brown);
+  font-weight: 400;
+}
+
+.warm-body-sm {
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--warm-mid);
+  font-weight: 400;
+}
+
+.warm-handwritten {
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  color: var(--warm-mid);
+  font-weight: 400;
+  font-style: italic;
+}
+
+/* Warm Backgrounds */
+.warm-bg-cream {
+  background-color: var(--warm-cream);
+}
+
+.warm-bg-white {
+  background-color: var(--warm-white);
+}
+
+.warm-bg-peach {
+  background-color: var(--light-peach);
+}
+
+.warm-bg-amber {
+  background-color: var(--soft-amber-bg);
+}
+
+.warm-bg-coffee-cream {
+  background-color: var(--coffee-cream);
+}
+
+.warm-bg-latte-foam {
+  background-color: var(--latte-foam);
+}
+
+.warm-bg-parchment {
+  background-color: var(--parchment);
+}
+
+.warm-bg-coffee {
+  background-color: var(--coffee-brown);
+}
+
+.warm-bg-espresso {
+  background-color: var(--espresso);
+}
+
+.warm-bg-dark {
+  background-color: var(--warm-dark);
+}
+
+.warm-bg-gradient {
+  background: var(--warm-gradient);
+}
+
+.warm-bg-gradient-reverse {
+  background: var(--warm-gradient-reverse);
+}
+
+.warm-bg-dark-overlay {
+  background: var(--dark-overlay);
+}
+
+/* Warm Shadows and Effects */
+.warm-shadow-sm {
+  box-shadow: 0 2px 8px var(--warm-shadow);
+}
+
+.warm-shadow {
+  box-shadow: 0 4px 16px var(--warm-shadow);
+}
+
+.warm-shadow-lg {
+  box-shadow: 0 8px 32px var(--warm-shadow);
+}
+
+.warm-shadow-premium {
+  box-shadow: var(--premium-shadow);
+}
+
+.warm-glow {
+  box-shadow: 0 0 20px var(--warm-glow);
+}
+
+.warm-glow-lg {
+  box-shadow: 0 0 40px var(--warm-glow);
+}
+
+/* Warm Borders */
+.warm-border {
+  border: 1px solid var(--warm-border);
+}
+
+.warm-border-light {
+  border: 1px solid var(--warm-border-light);
+}
+
+.warm-border-terracotta {
+  border: 2px solid var(--terracotta);
+}
+
+/* Warm Button Styles */
+.warm-btn-primary {
+  background: var(--terracotta-gradient);
+  color: white;
+  border: none;
+  padding: 0.875rem 2rem;
+  border-radius: 1rem;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: var(--warm-shadow);
+}
+
+.warm-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--warm-shadow-lg), var(--warm-glow);
+}
+
+.warm-btn-secondary {
+  background: transparent;
+  color: var(--warm-brown);
+  border: 2px solid var(--warm-border);
+  padding: 0.875rem 2rem;
+  border-radius: 1rem;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.warm-btn-secondary:hover {
+  background: var(--warm-white);
+  border-color: var(--terracotta);
+  transform: translateY(-2px);
+  box-shadow: var(--warm-shadow);
+}
+
+/* Warm Card Styles */
+.warm-card {
+  background: var(--warm-white);
+  border: 1px solid var(--warm-border-light);
+  border-radius: 1.5rem;
+  padding: 2rem;
+  box-shadow: var(--warm-shadow-sm);
+  transition: all 0.3s ease;
+}
+
+.warm-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--warm-shadow-lg);
+  border-color: var(--warm-border);
+}
+
+.warm-card-cream {
+  background: var(--warm-cream);
+}
+
+.warm-card-peach {
+  background: var(--light-peach);
+}
+
+.warm-card-amber {
+  background: var(--soft-amber-bg);
+}
+
+/* Warm Text Colors */
+.warm-text-dark {
+  color: var(--warm-dark);
+}
+
+.warm-text-brown {
+  color: var(--warm-brown);
+}
+
+.warm-text-mid {
+  color: var(--warm-mid);
+}
+
+.warm-text-light {
+  color: var(--warm-light);
+}
+
+.warm-text-darker {
+  color: var(--warm-darker);
+}
+
+.warm-text-darkest {
+  color: var(--warm-darkest);
+}
+
+.warm-text-terracotta {
+  color: var(--terracotta);
+}
+
+.warm-text-amber {
+  color: var(--soft-amber);
+}
+
+.warm-text-gold {
+  color: var(--warm-gold);
+}
+
+.warm-text-light-on-dark {
+  color: var(--warm-cream);
+}
+
+.warm-text-white-on-dark {
+  color: var(--warm-white);
+}
+
+/* Warm Animations */
+@keyframes warmFloat {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes warmGlow {
+  0%, 100% { box-shadow: 0 0 20px var(--warm-glow); }
+  50% { box-shadow: 0 0 40px var(--warm-glow); }
+}
+
+@keyframes warmFadeIn {
+  from { 
+    opacity: 0; 
+    transform: translateY(20px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+.warm-float {
+  animation: warmFloat 3s ease-in-out infinite;
+}
+
+.warm-glow-pulse {
+  animation: warmGlow 2s ease-in-out infinite;
+}
+
+.warm-fade-in {
+  animation: warmFadeIn 0.6s ease-out;
+}
+
+/* Warm Paper Texture Effect */
+.warm-paper-texture {
+  background-image: 
+    radial-gradient(circle at 1px 1px, rgba(0,0,0,0.02) 1px, transparent 0);
+  background-size: 20px 20px;
+}
+
+/* Warm Responsive Utilities */
+@media (max-width: 768px) {
+  .warm-card {
+    padding: 1.5rem;
+  }
+  
+  .warm-btn-primary,
+  .warm-btn-secondary {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.9rem;
+  }
+}
+
+/* Warm Focus States */
+.warm-focus {
+  outline: 2px solid var(--terracotta);
+  outline-offset: 2px;
+}
+
+/* Warm Scrollbar */
+.warm-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.warm-scrollbar::-webkit-scrollbar-track {
+  background: var(--warm-white);
+}
+
+.warm-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--warm-border);
+  border-radius: 4px;
+}
+
+.warm-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--terracotta);
+}

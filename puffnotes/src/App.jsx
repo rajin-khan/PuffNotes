@@ -1,9 +1,11 @@
 // src/App.jsx
 import { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import OfflineApp from './components/OfflineApp';
 import OnlineApp from './components/OnlineApp';
 import LandingPage from './components/LandingPage';
+import MarketingLanding from './components/MarketingLanding';
 import OnlineSetupModal from './components/OnlineSetupModal';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth, signInWithGoogle, signOut } from './lib/firebase';
@@ -130,11 +132,21 @@ export default function App() {
   };
 
   return (
-    <>
+    <Router>
       <AnimatePresence>
-        {showSetupModal && <OnlineSetupModal steps={setupSteps} />}
+        {showSetupModal && <OnlineSetupModal steps={setupSteps} theme="warm" />}
       </AnimatePresence>
-      {renderContent()}
-    </>
+      
+      <Routes>
+        <Route path="/welcome" element={
+          <MarketingLanding 
+            onStartOffline={handleStartOffline}
+            onStartOnline={handleStartOnline}
+          />
+        } />
+        <Route path="/" element={renderContent()} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Router>
   );
 }
