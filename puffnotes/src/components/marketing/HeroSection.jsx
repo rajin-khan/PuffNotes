@@ -46,8 +46,8 @@ const HeroSection = ({ onStartOffline, onStartOnline }) => {
 
   const textAnimationVariants = {
     initial: { opacity: 0, filter: 'blur(4px)' },
-    animate: { opacity: 1, filter: 'blur(0px)', transition: { duration: 0.4, ease: 'easeOut' } },
-    exit: { opacity: 0, filter: 'blur(4px)', transition: { duration: 0.2, ease: 'easeIn' } }
+    animate: { opacity: 1, filter: 'blur(0px)', transition: { duration: 0.5, ease: 'easeOut' } },
+    exit: { opacity: 0, filter: 'blur(4px)', transition: { duration: 0.5, ease: 'easeIn' } }
   };
 
   return (
