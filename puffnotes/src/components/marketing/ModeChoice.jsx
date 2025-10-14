@@ -1,8 +1,16 @@
 import { motion } from 'framer-motion';
 import { Lock, Cloud, FilePen } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import WarmButton from './WarmButton';
 
 const ModeChoice = ({ onStartOffline, onStartOnline }) => {
+  const navigate = useNavigate();
+
+  const handleOfflineClick = () => {
+    onStartOffline();
+    navigate('/');
+  };
+
   return (
     <div className="py-24 px-6" style={{ backgroundColor: '#362112' }}>
       <div className="text-center space-y-16">
@@ -59,7 +67,7 @@ const ModeChoice = ({ onStartOffline, onStartOnline }) => {
                 
                 <WarmButton
                   variant="primary"
-                  onClick={onStartOffline}
+                  onClick={handleOfflineClick}
                   className="w-full flex items-center justify-center gap-2 bg-[#362112] text-[#F5E6D3] hover:bg-[#2A1A0E] border-[#8B4513] hover:border-[#A0522D]"
                 >
                   <FilePen size={16} />
