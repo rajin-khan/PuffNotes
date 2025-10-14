@@ -27,15 +27,23 @@ const FinalCTA = ({ onStartOffline, onStartOnline }) => {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: 'easeOut', delay: 0.2 }}
           viewport={{ once: true }}
-          className="flex justify-center items-center"
+          className="flex justify-center items-center gap-4"
         >
           <WarmButton
             variant="primary"
             size="lg"
-            onClick={() => window.location.href = '/'}
+            onClick={onStartOffline}
             className="bg-[#F5E6D3] text-[#362112] hover:bg-[#E8D5C4] border-[#8B4513] hover:border-[#A0522D] shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1"
           >
-            Start Writing Now
+            Start Writing Offline
+          </WarmButton>
+          <WarmButton
+            variant="secondary"
+            size="lg"
+            onClick={onStartOnline}
+            className="bg-[#362112] text-[#F5E6D3] hover:bg-[#2A1A0E] border-[#8B4513] hover:border-[#A0522D] shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1"
+          >
+            Connect Google Drive
           </WarmButton>
         </motion.div>
         
