@@ -166,8 +166,13 @@ export default function OfflineApp({ onGoToLanding }) {
       ? 'rgba(74, 81, 120, 0.55)'
       : 'rgba(230, 221, 204, 0.9)';
 
+    // Must match the textarea's line-height (we enforce leading-7 = 28px)
+    const stepPx = 28;
+
     return {
-      backgroundImage: `repeating-linear-gradient(to bottom, transparent, transparent 26px, ${lineColor} 27px)`
+      backgroundImage: `linear-gradient(to bottom, transparent calc(${stepPx}px - 1px), ${lineColor} calc(${stepPx}px - 1px))`,
+      backgroundSize: `100% ${stepPx}px`,
+      backgroundRepeat: 'repeat',
     };
   };
 
@@ -286,7 +291,7 @@ export default function OfflineApp({ onGoToLanding }) {
                {isPreviewMode && !showBeautifyControls ? (
                   <MarkdownPreview markdownText={note} theme={currentTheme} />
                ) : (
-                  <textarea value={showBeautifyControls ? previewNote : note} onChange={(e) => { const val = e.target.value; if (!showBeautifyControls) { setNote(val); } }} placeholder="A quiet place to write..." style={getTextareaRuledLinesStyle()} className={`w-full h-full font-mono text-sm bg-transparent resize-none outline-none leading-relaxed placeholder:italic transition-all duration-300 ${focusMode ? 'text-base px-2' : 'text-sm'} [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${currentTheme === THEMES.GALAXY ? 'text-[#e8eaf6] placeholder:text-[#6c7b95]' : 'text-gray-800 placeholder:text-gray-400'}`} readOnly={isBeautifying || showBeautifyControls} />
+                  <textarea value={showBeautifyControls ? previewNote : note} onChange={(e) => { const val = e.target.value; if (!showBeautifyControls) { setNote(val); } }} placeholder="A quiet place to write..." style={getTextareaRuledLinesStyle()} className={`w-full h-full font-mono text-sm bg-transparent resize-none outline-none leading-7 placeholder:italic transition-all duration-300 ${focusMode ? 'text-base px-2' : 'text-sm'} [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${currentTheme === THEMES.GALAXY ? 'text-[#e8eaf6] placeholder:text-[#6c7b95]' : 'text-gray-800 placeholder:text-gray-400'}`} readOnly={isBeautifying || showBeautifyControls} />
                )}
             </div>
              <AnimatePresence>
