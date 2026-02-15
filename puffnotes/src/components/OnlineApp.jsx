@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import {
   FilePlus, FolderOpen, ChevronDown, ChevronUp, X, Wand2, Check,
   RotateCw, XCircle, CheckCircle, Info, KeyRound, Eye, Pen,
-  Keyboard, LogOut, AlertTriangle, Loader2, Home, HelpCircle, Settings, Trash2
+  Keyboard, LogOut, AlertTriangle, Loader2, Home, HelpCircle, Settings, Trash2, AlignJustify
 } from 'lucide-react';
 import { beautifyNoteWithGroq } from '../lib/groq';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -20,6 +20,7 @@ import { signOut } from '../lib/firebase';
 import { listNotes, getNoteContent, saveNoteContent, deleteNote } from '../lib/googleDrive';
 
 const USER_API_KEY_STORAGE_KEY = 'puffnotes_groqUserApiKey_v1';
+const RULED_LINES_STORAGE_KEY = 'puffnotes_ruledLines_v1';
 const DEFAULT_GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || '';
 
 const onlineOnboardingSteps = [
@@ -85,6 +86,7 @@ export default function OnlineApp({ user, accessToken, folderId, onSignOut, onGo
   const [isBeautifying, setIsBeautifying] = useState(false);
   const [saveStatus, setSaveStatus] = useState('saved');
   const [focusMode, setFocusMode] = useState(false);
+  const [ruledLines, setRuledLines] = useState(() => localStorage.getItem(RULED_LINES_STORAGE_KEY) === 'true');
   const [dropAnimationComplete, setDropAnimationComplete] = useState(true);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
@@ -143,6 +145,26 @@ export default function OnlineApp({ user, accessToken, folderId, onSignOut, onGo
   const handleSaveUserApiKey = (key) => { const trimmedKey = key ? key.trim() : ''; localStorage.setItem(USER_API_KEY_STORAGE_KEY, trimmedKey); setUserApiKey(trimmedKey); setApiKeyError(false); setApiKeySaveFeedback(trimmedKey ? 'API Key saved!' : 'API Key removed.'); setTimeout(() => setApiKeySaveFeedback(''), 2500); };
   const handleExportPdf = async () => { const contentToExport = showBeautifyControls ? previewNote : note; if (!contentToExport.trim() || isExportingPdf) return; setIsExportingPdf(true); const filename = (noteName.trim() || "untitled") + ".pdf"; const pageBackgroundColor = currentTheme === THEMES.GALAXY ? '#0a0e27' : '#fdfbf7'; const headerTextColor = currentTheme === THEMES.GALAXY ? '#6c7b95' : '#a8a29a'; const headerText = "puffnotes"; const headerFontSize = 9; const margin = 18; const headerTopMargin = 15; const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4', putOnlyUsedFonts: true, floatPrecision: 'smart' }); const pdfWidth = pdf.internal.pageSize.getWidth(); const pdfHeight = pdf.internal.pageSize.getHeight(); const contentWidthMM = pdfWidth - (margin * 2); const contentHeightMM = pdfHeight - (margin * 2) - 10; const contentWidthPX = Math.floor(contentWidthMM * 3.78); const tempContainerId = 'pdf-render-container'; let tempContainer = document.getElementById(tempContainerId); if (!tempContainer) { tempContainer = document.createElement('div'); tempContainer.id = tempContainerId; tempContainer.style.position = 'absolute'; tempContainer.style.left = '-9999px'; tempContainer.style.top = '-9999px'; tempContainer.style.border = '1px solid transparent'; document.body.appendChild(tempContainer); } else { tempContainer.innerHTML = ''; } tempContainer.style.width = `${contentWidthPX}px`; tempContainer.style.padding = `1px`; tempContainer.style.background = pageBackgroundColor; tempContainer.style.fontFamily = 'monospace'; tempContainer.style.fontSize = '14px'; tempContainer.style.lineHeight = '1.625'; tempContainer.style.color = currentTheme === THEMES.GALAXY ? '#e8eaf6' : '#1f2937'; tempContainer.style.height = 'auto'; tempContainer.style.display = 'inline-block'; const root = ReactDOM.createRoot(tempContainer); root.render(<MarkdownPreview markdownText={contentToExport} theme={currentTheme} />); await new Promise(resolve => setTimeout(resolve, 500)); try { const selectorsAndColors = currentTheme === THEMES.GALAXY ? [ { selector: '.text-\\[\\#e8eaf6\\]', color: '#e8eaf6' }, { selector: '.text-\\[\\#b8bfde\\]', color: '#b8bfde' }, { selector: 'blockquote', color: '#b8bfde' }, { selector: '.border-\\[\\#4a5178\\]', color: '#4a5178', styleProp: 'borderColor' }, { selector: '.bg-\\[\\#2d3561\\]', color: '#2d3561', styleProp: 'backgroundColor' }, { selector: '.text-\\[\\#9b59b6\\]', color: '#9b59b6' }, { selector: '.bg-\\[\\#0d1235\\]', color: '#0d1235', styleProp: 'backgroundColor' }, ] : [ { selector: '.text-gray-800', color: '#1f2937' }, { selector: '.text-gray-600', color: '#4b5563' }, { selector: 'blockquote', color: '#4b5563' }, { selector: '.border-\\[\\#e6ddcc\\]', color: '#e6ddcc', styleProp: 'borderColor' }, { selector: '.bg-\\[\\#fff7ee\\]', color: '#fff7ee', styleProp: 'backgroundColor' }, { selector: '.text-\\[\\#9a8c73\\]', color: '#9a8c73' }, { selector: '.bg-\\[\\#fdf6ec\\]', color: '#fdf6ec', styleProp: 'backgroundColor' }, ]; selectorsAndColors.forEach(({ selector, color, styleProp = 'color' }) => { try { const elements = tempContainer.querySelectorAll(selector); elements.forEach(el => { const className = selector.startsWith('.') ? selector.substring(1).replace(/\\/g, '') : null; if ((className && el.classList.contains(className)) || !selector.startsWith('.')) { el.style[styleProp] = color; } }); } catch (e) { console.warn(`Failed override for selector: ${selector}`, e); } }); } catch (e) { console.warn("Error applying style overrides:", e); } try { const canvas = await html2canvas(tempContainer, { scale: 3, useCORS: true, logging: false, backgroundColor: pageBackgroundColor, width: tempContainer.scrollWidth, height: tempContainer.scrollHeight, windowWidth: tempContainer.scrollWidth, windowHeight: tempContainer.scrollHeight, scrollX: 0, scrollY: 0, removeContainer: false, imageTimeout: 15000 }); const imgData = canvas.toDataURL('image/png'); const imgProps = pdf.getImageProperties(imgData); const canvasWidthPX = canvas.width; const canvasHeightPX = canvas.height; const scaleFactor = contentWidthMM / canvasWidthPX; const totalHeightMM = canvasHeightPX * scaleFactor; const pixelsPerPage = contentHeightMM / scaleFactor; const addPageStyling = () => { pdf.setFillColor(pageBackgroundColor); pdf.rect(0, 0, pdfWidth, pdfHeight, 'F'); pdf.setFontSize(headerFontSize); try { pdf.setFont('times', 'normal'); } catch (e) { pdf.setFont('serif', 'normal'); } pdf.setTextColor(headerTextColor); pdf.text(headerText, margin, headerTopMargin); }; addPageStyling(); let remainingHeight = canvasHeightPX; let currentY = 0; while (remainingHeight > 0) { const heightToUse = Math.min(remainingHeight, pixelsPerPage); const tempCanvas = document.createElement('canvas'); tempCanvas.width = canvasWidthPX; tempCanvas.height = heightToUse; const tempCtx = tempCanvas.getContext('2d'); tempCtx.drawImage( canvas, 0, currentY, canvasWidthPX, heightToUse, 0, 0, canvasWidthPX, heightToUse ); const pageImgData = tempCanvas.toDataURL('image/png'); pdf.addImage( pageImgData, 'PNG', margin, margin, contentWidthMM, heightToUse * scaleFactor, undefined, 'FAST' ); currentY += heightToUse; remainingHeight -= heightToUse; if (remainingHeight > 0) { pdf.addPage(); addPageStyling(); } } pdf.save(filename); } catch (error) { console.error("Error generating PDF:", error); let message = `Failed to export PDF.`; if (error.message && error.message.includes('color function "oklch"')) { message += ' A style used in the note might not be supported.'; } else { message += ` ${error.message || 'Check console for details.'}`; } alert(message); } finally { root.unmount(); if (tempContainer && tempContainer.parentNode) { tempContainer.parentNode.removeChild(tempContainer); } setIsExportingPdf(false); } };
   const toggleFocusMode = () => setFocusMode(prev => !prev);
+  const toggleRuledLines = () => {
+    setRuledLines(prev => {
+      const next = !prev;
+      localStorage.setItem(RULED_LINES_STORAGE_KEY, String(next));
+      return next;
+    });
+  };
+
+  const getTextareaRuledLinesStyle = () => {
+    if (!ruledLines) return undefined;
+
+    const lineColor = currentTheme === THEMES.GALAXY
+      ? 'rgba(74, 81, 120, 0.55)'
+      : 'rgba(230, 221, 204, 0.9)';
+
+    return {
+      backgroundImage: `repeating-linear-gradient(to bottom, transparent, transparent 26px, ${lineColor} 27px)`
+    };
+  };
+
   const togglePreviewMode = () => { if (!showBeautifyControls) setIsPreviewMode(prev => !prev); };
   useEffect(() => { const loadInitialFiles = async () => { const files = await refreshFileList(); if (files.length > 0) { handleOpenFile(files[0]); } setIsInitialLoad(false); }; loadInitialFiles(); }, [folderId, accessToken]);
   useEffect(() => { if (isInitialLoad || saveStatus !== 'unsaved') { return; } const handler = setTimeout(() => { handleAutoSave(); }, 1500); return () => { clearTimeout(handler); }; }, [note, noteName, saveStatus, isInitialLoad]);
@@ -204,6 +226,7 @@ export default function OnlineApp({ user, accessToken, folderId, onSignOut, onGo
         <div className="absolute top-3 right-3 sm:top-4 sm:right-6 z-50 flex items-center space-x-2 sm:space-x-3">
             <div className={`flex items-center space-x-2 sm:space-x-3 px-3 sm:px-4 py-2 rounded-full shadow-md border ${currentTheme === THEMES.GALAXY ? 'border-[#4a5178] bg-[#0f1642]/80' : 'border-[#d4c4a8] bg-white/30'}`}>
                 <button onClick={toggleFocusMode} className={`opacity-60 hover:opacity-100 transition ${focusMode ? (currentTheme === THEMES.GALAXY ? 'text-[#f39c12]' : 'text-orange-200') : (currentTheme === THEMES.GALAXY ? 'text-[#b8bfde]' : 'text-gray-600')}`} title={focusMode ? "Exit Focus Mode" : "Focus Mode"}> <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"> <circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="4" /> </svg> </button>
+                <button onClick={toggleRuledLines} className={`opacity-60 hover:opacity-100 transition ${ruledLines ? (currentTheme === THEMES.GALAXY ? 'text-[#f39c12]' : 'text-orange-200') : (currentTheme === THEMES.GALAXY ? 'text-[#b8bfde]' : 'text-gray-600')}`} title={ruledLines ? "Hide ruled lines" : "Show ruled lines"}> <AlignJustify size={20} /> </button>
                 <motion.button onClick={() => setShowFileModal(p => !p)} className={`opacity-60 hover:opacity-100 transition ${currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3]' : 'text-gray-400'}`} title="Open Notes Folder" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}> <FolderOpen size={20} /> </motion.button>
                  <div title={saveStatus === 'saved' ? 'All changes saved' : (saveStatus === 'saving' ? 'Saving...' : 'Unsaved changes')} className="flex items-center">
                     {saveStatus === 'saving' ? (
@@ -275,7 +298,7 @@ export default function OnlineApp({ user, accessToken, folderId, onSignOut, onGo
                ) : isPreviewMode && !showBeautifyControls ? (
                   <MarkdownPreview markdownText={note} theme={currentTheme} />
                ) : (
-                  <textarea value={showBeautifyControls ? previewNote : note} onChange={handleNoteChange} placeholder="A quiet place to write..." className={`w-full h-full font-mono text-sm bg-transparent resize-none outline-none leading-relaxed placeholder:italic transition-all duration-300 ${focusMode ? 'text-base px-2' : 'text-sm'} [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${currentTheme === THEMES.GALAXY ? 'text-[#e8eaf6] placeholder:text-[#6c7b95]' : 'text-gray-800 placeholder:text-gray-400'}`} readOnly={isBeautifying || showBeautifyControls} />
+                  <textarea value={showBeautifyControls ? previewNote : note} onChange={handleNoteChange} placeholder="A quiet place to write..." style={getTextareaRuledLinesStyle()} className={`w-full h-full font-mono text-sm bg-transparent resize-none outline-none leading-relaxed placeholder:italic transition-all duration-300 ${focusMode ? 'text-base px-2' : 'text-sm'} [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${currentTheme === THEMES.GALAXY ? 'text-[#e8eaf6] placeholder:text-[#6c7b95]' : 'text-gray-800 placeholder:text-gray-400'}`} readOnly={isBeautifying || showBeautifyControls} />
                )}
             </div>
              <AnimatePresence>
