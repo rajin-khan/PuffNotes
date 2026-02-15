@@ -75,6 +75,30 @@ export async function getNoteContent(accessToken, fileId) {
 }
 
 /**
+ * Deletes a note from Google Drive.
+ * @param {string} accessToken The user's OAuth2 access token.
+ * @param {string} fileId The ID of the file to delete.
+ * @returns {Promise<void>}
+ */
+export async function deleteNote(accessToken, fileId) {
+  const url = `https://www.googleapis.com/drive/v3/files/${fileId}`;
+  const response = await fetch(url, {
+    method: 'DELETE',
+    headers: { 'Authorization': `Bearer ${accessToken}` }
+  });
+
+  // Drive returns 204 No Content on success
+  if (!response.ok) {
+    let msg = 'Failed to delete note.';
+    try {
+      const err = await response.json();
+      msg = err?.error?.message || msg;
+    } catch {}
+    throw new Error(msg);
+  }
+}
+
+/**
  * Creates or updates a note in Google Drive.
  * @param {string} accessToken The user's OAuth2 access token.
  * @param {string} folderId The ID of the puffnotes folder.
