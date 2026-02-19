@@ -4,7 +4,7 @@ import useFileSystemAccess from '../hooks/useFileSystemAccess';
 import {
   FilePlus, FolderOpen, ChevronDown, ChevronUp, X, Wand2, Save, Check,
   RotateCw, XCircle, CheckCircle, Info, KeyRound, AlertTriangle,
-  Eye, Pen, Keyboard, Home, HelpCircle, Settings, Paintbrush, Eraser, Trash2
+  Eye, Pen, Keyboard, Home, HelpCircle, Settings, Paintbrush, Eraser, Trash2, AlignJustify, Loader2
 } from 'lucide-react';
 import { beautifyNoteWithGroq } from '../lib/groq';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -22,6 +22,7 @@ import { CANVAS_EXT, toCanvasFilename } from '../lib/canvasNotes';
 
 const USER_API_KEY_STORAGE_KEY = 'puffnotes_groqUserApiKey_v1';
 const CANVAS_MODE_STORAGE_KEY = 'puffnotes_canvasMode_v1';
+const RULED_LINES_STORAGE_KEY = 'puffnotes_ruledLines_v1';
 const DEFAULT_GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || '';
 
 const offlineOnboardingSteps = [
@@ -96,6 +97,7 @@ export default function OfflineApp({ onGoToLanding }) {
   const [activeCanvasName, setActiveCanvasName] = useState("");
   const [canvasDirty, setCanvasDirty] = useState(false);
   const canvasRef = useRef(null);
+  const [ruledLines, setRuledLines] = useState(() => localStorage.getItem(RULED_LINES_STORAGE_KEY) === 'true');
   const [dropAnimationComplete, setDropAnimationComplete] = useState(true);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
@@ -175,6 +177,29 @@ export default function OfflineApp({ onGoToLanding }) {
     if (isCanvasMode) return;
 
     let currentFolderHandle = folderHandle; if (!currentFolderHandle) { try { const picked = await pickFolder(); if (!picked) return; currentFolderHandle = picked; } catch (err) { console.error("Error picking folder:", err); if (err.name !== 'AbortError') { alert("Could not get permission to access the folder."); } return; } } if (!noteName.trim()) { alert("Please enter a name for your note before saving."); return; } const filename = noteName.endsWith(".md") ? noteName : `${noteName}.md`; try { const savedAs = await saveNote(filename, note, isFirstSave); if (savedAs) { const baseName = savedAs.replace(/\.md$/, ""); setNoteName(baseName); setActiveFileName(savedAs); setIsFirstSave(false); refreshFileList(); setSaveIndicator(true); setTimeout(() => setSaveIndicator(false), 1500); } else if (isFirstSave) { console.log("Save As dialog cancelled."); } } catch (err) { console.error("Error saving file:", err); alert(`Failed to save note: ${filename}. Error: ${err.message}`); } };
+  const refreshFileList = async () => { if (folderHandle) { try { const files = await listFiles(); setFileList(files || []); } catch (err) { console.error("Failed to refresh file list:", err); setFileList([]); } } };
+  const handleOpenFile = async (filename) => { if (!filename) return; try { const content = await loadNote(filename); if (content === null) { alert(`Could not load file: ${filename}. Folder permissions might have changed.`); return; } const baseName = filename.replace(/\.md$/, ""); setNote(content); setNoteName(baseName); setActiveFileName(filename); setIsFirstSave(false); setShowFileModal(false); setPreviewNote(""); setShowBeautifyControls(false); setOriginalNote(""); setIsPreviewMode(false); } catch (err) { console.error("Error opening file:", err); alert(`Failed to open file: ${filename}. Error: ${err.message}`); } };
+  const handleDeleteFile = async (filename) => {
+    if (!filename) return;
+    const ok = confirm(`Delete "${filename.replace(/\.md$/, "")}"? This cannot be undone.`);
+    if (!ok) return;
+    try {
+      const deleted = await deleteNote(filename);
+      if (!deleted) throw new Error('Delete failed.');
+      if (activeFileName === filename) {
+        setNote('');
+        setNoteName('untitled');
+        setActiveFileName(null);
+        setIsFirstSave(true);
+      }
+      await refreshFileList();
+    } catch (err) {
+      console.error('Error deleting file:', err);
+      alert(`Failed to delete file: ${filename}. Error: ${err.message}`);
+    }
+  };
+  const handleNewNote = () => { setNote(""); setNoteName("untitled"); setActiveFileName(""); setIsFirstSave(true); setPreviewNote(""); setShowBeautifyControls(false); setOriginalNote(""); setIsPreviewMode(false); };
+  const handleSave = async () => { let currentFolderHandle = folderHandle; if (!currentFolderHandle) { try { const picked = await pickFolder(); if (!picked) return; currentFolderHandle = picked; } catch (err) { console.error("Error picking folder:", err); if (err.name !== 'AbortError') { alert("Could not get permission to access the folder."); } return; } } if (!noteName.trim()) { alert("Please enter a name for your note before saving."); return; } const filename = noteName.endsWith(".md") ? noteName : `${noteName}.md`; try { const savedAs = await saveNote(filename, note, isFirstSave); if (savedAs) { const baseName = savedAs.replace(/\.md$/, ""); setNoteName(baseName); setActiveFileName(savedAs); setIsFirstSave(false); refreshFileList(); setSaveIndicator(true); setTimeout(() => setSaveIndicator(false), 1500); } else if (isFirstSave) { console.log("Save As dialog cancelled."); } } catch (err) { console.error("Error saving file:", err); alert(`Failed to save note: ${filename}. Error: ${err.message}`); } };
   const handleBeautify = async (isRegeneration = false) => { const noteToProcess = isRegeneration ? (originalNote || note) : note; if (!noteToProcess.trim()) return; const keyToUse = userApiKey || DEFAULT_GROQ_API_KEY; if (!keyToUse) { console.error("No Groq API Key available (User or Default)."); setApiKeyError(true); setApiKeySaveFeedback(''); setShowSettingsModal(true); setTimeout(() => apiKeyInputRef.current?.focus(), 100); return; } setIsBeautifying(true); if (!isRegeneration) { setOriginalNote(note); } setApiKeyError(false); setApiKeySaveFeedback(''); try { const result = await beautifyNoteWithGroq(noteToProcess, keyToUse); setPreviewNote(result); setShowBeautifyControls(true); setIsPreviewMode(false); } catch (err) { console.error("Beautify request failed:", err); let userMessage = `AI Beautify failed: ${err.message || 'Unknown error'}`; const isAuthOrRateLimitError = err.status === 401 || err.status === 403 || err.status === 429; if (!userApiKey && keyToUse === DEFAULT_GROQ_API_KEY && isAuthOrRateLimitError) { userMessage = "The default AI key might be rate-limited or invalid. Please enter your own free Groq API key to continue."; setApiKeyError(true); setShowSettingsModal(true); setTimeout(() => apiKeyInputRef.current?.focus(), 100); } else if (userApiKey && keyToUse === userApiKey && isAuthOrRateLimitError) { userMessage = "Your Groq API key seems invalid or rate-limited. Please check it or generate a new one."; setShowSettingsModal(true); setTimeout(() => apiKeyInputRef.current?.focus(), 100); alert(userMessage); } else { alert(userMessage); } setPreviewNote(""); setShowBeautifyControls(false); } finally { setIsBeautifying(false); } };
   const acceptBeautified = () => { setNote(previewNote); setPreviewNote(""); setOriginalNote(""); setShowBeautifyControls(false); setIsPreviewMode(false); };
   const rejectBeautified = () => { setPreviewNote(""); setShowBeautifyControls(false); setIsPreviewMode(false); };
@@ -182,6 +207,30 @@ export default function OfflineApp({ onGoToLanding }) {
   const handleSaveUserApiKey = (key) => { const trimmedKey = key ? key.trim() : ''; localStorage.setItem(USER_API_KEY_STORAGE_KEY, trimmedKey); setUserApiKey(trimmedKey); setApiKeyError(false); setApiKeySaveFeedback(trimmedKey ? 'API Key saved!' : 'API Key removed.'); setTimeout(() => setApiKeySaveFeedback(''), 2500); };
   const handleFolderButton = async () => { if (!folderHandle) { try { await pickFolder(); } catch (err) { if (err.name !== 'AbortError') { console.error("Error picking folder:", err); alert("Could not get permission to access the folder."); } } } else { setShowFileModal((prev) => !prev); if (!showFileModal) { refreshFileList(); } } };
   const toggleFocusMode = () => { setFocusMode(prev => !prev); };
+  const toggleRuledLines = () => {
+    setRuledLines(prev => {
+      const next = !prev;
+      localStorage.setItem(RULED_LINES_STORAGE_KEY, String(next));
+      return next;
+    });
+  };
+  const getTextareaRuledLinesStyle = () => {
+    if (!ruledLines) return undefined;
+
+    const lineColor = currentTheme === THEMES.GALAXY
+      ? 'rgba(74, 81, 120, 0.55)'
+      : 'rgba(230, 221, 204, 0.9)';
+
+    // Must match the textarea's line-height (we enforce leading-7 = 28px)
+    const stepPx = 28;
+
+    return {
+      backgroundImage: `linear-gradient(to bottom, transparent calc(${stepPx}px - 1px), ${lineColor} calc(${stepPx}px - 1px))`,
+      backgroundSize: `100% ${stepPx}px`,
+      backgroundRepeat: 'repeat',
+    };
+  };
+
   const togglePreviewMode = () => { if (showBeautifyControls) return; setIsPreviewMode(prev => !prev); };
   const handleExportPdf = async () => {
     if (isExportingPdf) return;
@@ -319,6 +368,7 @@ export default function OfflineApp({ onGoToLanding }) {
           <AnimatePresence> {(!folderHandle || isFirstSave) && !showSettingsModal && ( <motion.span initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3 }} className={`font-serif text-sm mr-3 rounded-full px-4 py-1 shadow-sm ${currentTheme === THEMES.GALAXY ? 'text-[#b8bfde] bg-[#2d3561] border border-[#4a5178]' : 'text-gray-600 bg-[#fff7ee] border border-[#e6ddcc]'}`}> {!folderHandle ? "Select a folder (Cmd/Ctrl + O)" : "Save Note (Cmd/Ctrl + S)"} </motion.span> )} </AnimatePresence>
           <div className={`flex items-center space-x-3 px-4 py-2 rounded-full shadow-md border ${currentTheme === THEMES.GALAXY ? 'border-[#4a5178] bg-[#0f1642]/80' : 'border-[#d4c4a8] bg-white/30'}`}>
             <button onClick={toggleFocusMode} className={`opacity-60 hover:opacity-100 transition ${focusMode ? (currentTheme === THEMES.GALAXY ? 'text-[#f39c12]' : 'text-orange-200') : (currentTheme === THEMES.GALAXY ? 'text-[#b8bfde]' : 'text-gray-600')}`} title={focusMode ? "Exit Focus Mode" : "Focus Mode"}> <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"> <circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="4" /> </svg> </button>
+            <button onClick={toggleRuledLines} className={`opacity-60 hover:opacity-100 transition ${ruledLines ? (currentTheme === THEMES.GALAXY ? 'text-[#f39c12]' : 'text-orange-200') : (currentTheme === THEMES.GALAXY ? 'text-[#b8bfde]' : 'text-gray-600')}`} title={ruledLines ? "Hide ruled lines" : "Show ruled lines"}> <AlignJustify size={20} /> </button>
             <motion.button onClick={handleFolderButton} className={`opacity-60 hover:opacity-100 transition ${currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3]' : 'text-gray-400'}`} title={folderHandle ? "Open Notes Folder" : "Select Notes Folder"} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}> <FolderOpen size={20} /> </motion.button>
             {isFirstSave ? ( <motion.button onClick={handleSave} className={`opacity-60 transition ${currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3]' : 'text-gray-400'} ${!noteName.trim() ? 'cursor-not-allowed opacity-30' : 'hover:opacity-100'}`} title="Save Note" whileHover={noteName.trim() ? { scale: 1.1 } : {}} whileTap={noteName.trim() ? { scale: 0.95 } : {}} disabled={!noteName.trim()}> <Save size={20} /> </motion.button> ) : ( <motion.div animate={{ rotate: saveIndicator ? [0, 20, 0] : 0, scale: saveIndicator ? [1, 1.2, 1] : 1, color: saveIndicator ? (currentTheme === THEMES.GALAXY ? ["#8b9dc3", "#1abc9c", "#8b9dc3"] : ["#6b7280", "#10b981", "#6b7280"]) : (currentTheme === THEMES.GALAXY ? "#8b9dc3" : "#9ca3af") }} transition={{ duration: 0.5 }} title="Note Autosaved"> <Check size={20} className="opacity-100" /> </motion.div> )}
             <motion.button onClick={() => { setDropAnimationComplete(false); setIsEditorVisible((prev) => !prev); }} className={`opacity-60 hover:opacity-100 transition ${currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3]' : 'text-gray-400'}`} title={isEditorVisible ? 'Hide Editor' : 'Show Editor'} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}> {isEditorVisible ? <ChevronDown size={20} /> : <ChevronUp size={20} />} </motion.button>
@@ -354,6 +404,7 @@ export default function OfflineApp({ onGoToLanding }) {
     )}
   </div>
 </div> <button onClick={pickFolder} className={`mt-4 w-full text-center text-xs underline py-1 ${currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3] hover:text-[#e8eaf6]' : 'text-gray-500 hover:text-gray-700'}`}> Change Folder </button> </motion.div> </motion.div> )} </AnimatePresence>
+        <AnimatePresence> {showFileModal && folderHandle && ( <motion.div className="fixed inset-0 z-30 bg-black bg-opacity-30 flex items-center justify-center p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} onClick={() => setShowFileModal(false)}> <motion.div className={`rounded-xl shadow-xl w-full max-w-xs max-h-[60vh] overflow-y-auto p-4 ${currentTheme === THEMES.GALAXY ? 'bg-[#0f1642] border border-[#2d3561]' : 'bg-white border border-[#e6ddcc]'}`} initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} transition={{ type: "spring", duration: 0.4 }} onClick={e => e.stopPropagation()}> <div className="flex justify-between items-center mb-3"> <h2 className={`font-serif text-lg ${currentTheme === THEMES.GALAXY ? 'text-[#e8eaf6]' : 'text-gray-800'}`}>Your Notes</h2> <motion.button onClick={() => setShowFileModal(false)} className={`${currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3] hover:text-[#e8eaf6]' : 'text-gray-500 hover:text-gray-800'}`} title="Close" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}> <X size={18} /> </motion.button> </div> {fileList.length === 0 ? ( <p className={`text-sm italic px-2 py-1 ${currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3]' : 'text-gray-500'}`}>No markdown notes (.md) found in the selected folder.</p> ) : ( <div className="space-y-1"> {fileList.map((filename, index) => ( <motion.div key={filename} className={`flex items-center justify-between gap-2 text-sm font-mono px-2 py-1.5 rounded transition-colors duration-100 ${currentTheme === THEMES.GALAXY ? 'text-[#e8eaf6]' : 'text-[#333]'}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.03 }} whileHover={{ x: 3 }}> <button onClick={() => handleOpenFile(filename)} className={`flex-1 text-left rounded ${currentTheme === THEMES.GALAXY ? 'hover:bg-[#2d3561]' : 'hover:bg-[#f8f6f2]'} px-1 py-0.5`} title={`Open ${filename}`}> {filename.replace(/\.md$/, "")} </button> <motion.button onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteFile(filename); }} className={`${currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3] hover:text-red-300' : 'text-gray-400 hover:text-red-500'} opacity-70 hover:opacity-100 transition`} title={`Delete ${filename}`} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}> <Trash2 size={16} /> </motion.button> </motion.div> ))} </div> )} <button onClick={pickFolder} className={`mt-4 w-full text-center text-xs underline py-1 ${currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3] hover:text-[#e8eaf6]' : 'text-gray-500 hover:text-gray-700'}`}> Change Folder </button> </motion.div> </motion.div> )} </AnimatePresence>
 
         <AnimatePresence> {!isEditorVisible && dropAnimationComplete && ( <motion.div className="fixed bottom-0 left-0 right-0 z-10 flex justify-center" initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: "spring", stiffness: 400, damping: 40, mass: 1 }}> <motion.div className={`border-t rounded-t-2xl shadow-2xl px-6 py-3 flex items-center space-x-3 cursor-pointer ${currentTheme === THEMES.GALAXY ? 'bg-[#0f1642] border-[#2d3561]' : 'bg-white border-[#e6ddcc]'}`} onClick={() => { setDropAnimationComplete(false); setIsEditorVisible(true); }} whileHover={{ y: -2, boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)" }} whileTap={{ scale: 0.98 }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ delay: 0.1 }}> <motion.span className={`font-serif text-lg tracking-tight ${currentTheme === THEMES.GALAXY ? 'text-[#e8eaf6]' : 'text-[#1a1a1a]'}`} animate={{ y: [0, -1, 0] }} transition={{ repeat: Infinity, repeatType: "mirror", duration: 2, ease: "easeInOut" }}> puffnotes </motion.span> <span className={currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3]' : 'text-gray-400'}>|</span> <span className={`font-serif text-sm max-w-[150px] sm:max-w-xs truncate ${currentTheme === THEMES.GALAXY ? 'text-[#b8bfde]' : 'text-gray-500'}`} title={noteName || "untitled"}> {noteName || "untitled"} </span> </motion.div> </motion.div> )} </AnimatePresence>
 
@@ -429,7 +480,7 @@ export default function OfflineApp({ onGoToLanding }) {
                ) : isPreviewMode && !showBeautifyControls ? (
                   <MarkdownPreview markdownText={note} theme={currentTheme} />
                ) : (
-                  <textarea value={showBeautifyControls ? previewNote : note} onChange={(e) => { const val = e.target.value; if (!showBeautifyControls) { setNote(val); } }} placeholder="A quiet place to write..." className={`w-full h-full font-mono text-sm bg-transparent resize-none outline-none leading-relaxed placeholder:italic transition-all duration-300 ${focusMode ? 'text-base px-2' : 'text-sm'} [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${currentTheme === THEMES.GALAXY ? 'text-[#e8eaf6] placeholder:text-[#6c7b95]' : 'text-gray-800 placeholder:text-gray-400'}`} readOnly={isBeautifying || showBeautifyControls} />
+                  <textarea value={showBeautifyControls ? previewNote : note} onChange={(e) => { const val = e.target.value; if (!showBeautifyControls) { setNote(val); } }} placeholder="A quiet place to write..." style={getTextareaRuledLinesStyle()} className={`w-full h-full font-mono text-sm bg-transparent resize-none outline-none leading-7 placeholder:italic transition-all duration-300 ${focusMode ? 'text-base px-2' : 'text-sm'} [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${currentTheme === THEMES.GALAXY ? 'text-[#e8eaf6] placeholder:text-[#6c7b95]' : 'text-gray-800 placeholder:text-gray-400'}`} readOnly={isBeautifying || showBeautifyControls} />
                )}
             </div>
              <AnimatePresence>

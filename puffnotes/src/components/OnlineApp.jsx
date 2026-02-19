@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import {
   FilePlus, FolderOpen, ChevronDown, ChevronUp, X, Wand2, Check,
   RotateCw, XCircle, CheckCircle, Info, KeyRound, Eye, Pen,
-  Keyboard, LogOut, AlertTriangle, Loader2, Home, HelpCircle, Settings, Paintbrush, Eraser, Trash2
+  Keyboard, LogOut, AlertTriangle, Loader2, Home, HelpCircle, Settings, Paintbrush, Eraser, Trash2, AlignJustify
 } from 'lucide-react';
 import { beautifyNoteWithGroq } from '../lib/groq';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -24,6 +24,8 @@ import { CANVAS_EXT, toCanvasFilename } from '../lib/canvasNotes';
 
 const USER_API_KEY_STORAGE_KEY = 'puffnotes_groqUserApiKey_v1';
 const CANVAS_MODE_STORAGE_KEY = 'puffnotes_canvasMode_v1';
+import { listNotes, getNoteContent, saveNoteContent, deleteNote } from '../lib/googleDrive';
+const RULED_LINES_STORAGE_KEY = 'puffnotes_ruledLines_v1';
 const DEFAULT_GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || '';
 
 const onlineOnboardingSteps = [
@@ -98,6 +100,7 @@ export default function OnlineApp({ user, accessToken, folderId, onSignOut, onGo
   const [activeCanvasName, setActiveCanvasName] = useState("");
   const [canvasDirty, setCanvasDirty] = useState(false);
   const canvasRef = useRef(null);
+  const [ruledLines, setRuledLines] = useState(() => localStorage.getItem(RULED_LINES_STORAGE_KEY) === 'true');
   const [dropAnimationComplete, setDropAnimationComplete] = useState(true);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
@@ -166,6 +169,21 @@ export default function OnlineApp({ user, accessToken, folderId, onSignOut, onGo
       alert(`Failed to open canvas: ${file.name}. Error: ${err.message}`);
     } finally {
       setIsLoadingNote(false);
+  const refreshFileList = async () => { try { const files = await listNotes(accessToken, folderId); setFileList(files || []); return files; } catch (err) { console.error("Failed to refresh file list:", err); setFileList([]); return []; } };
+  const handleOpenFile = async (file) => { if (!file || isLoadingNote) return; setIsLoadingNote(true); setShowFileModal(false); try { const content = await getNoteContent(accessToken, file.id); const baseName = file.name.replace(/\.md$/, ""); setNote(content); noteContentRef.current = content; setNoteName(baseName); setActiveNoteId(file.id); setPreviewNote(""); setShowBeautifyControls(false); setOriginalNote(""); setIsPreviewMode(false); setSaveStatus('saved'); } catch (err) { console.error("Error opening file:", err); alert(`Failed to open file: ${file.name}. Error: ${err.message}`); } finally { setIsLoadingNote(false); } };
+  const handleDeleteFile = async (file) => {
+    if (!file?.id) return;
+    const ok = confirm(`Delete "${file.name.replace(/\.md$/, "")}"? This cannot be undone.`);
+    if (!ok) return;
+    try {
+      await deleteNote(accessToken, file.id);
+      if (activeNoteId === file.id) {
+        handleNewNote();
+      }
+      await refreshFileList();
+    } catch (err) {
+      console.error("Error deleting file:", err);
+      alert(`Failed to delete file: ${file.name}. Error: ${err.message}`);
     }
   };
   const handleNewNote = () => { if (saveStatus === 'saving') return; setNote(""); noteContentRef.current = ""; setNoteName("untitled"); setActiveNoteId(null); setPreviewNote(""); setShowBeautifyControls(false); setOriginalNote(""); setIsPreviewMode(false); setSaveStatus('unsaved'); };
@@ -249,6 +267,31 @@ export default function OnlineApp({ user, accessToken, folderId, onSignOut, onGo
 
     const contentToExport = showBeautifyControls ? previewNote : note; if (!contentToExport.trim()) return; setIsExportingPdf(true); const filename = (noteName.trim() || "untitled") + ".pdf"; const pageBackgroundColor = currentTheme === THEMES.GALAXY ? '#0a0e27' : '#fdfbf7'; const headerTextColor = currentTheme === THEMES.GALAXY ? '#6c7b95' : '#a8a29a'; const headerText = "puffnotes"; const headerFontSize = 9; const margin = 18; const headerTopMargin = 15; const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4', putOnlyUsedFonts: true, floatPrecision: 'smart' }); const pdfWidth = pdf.internal.pageSize.getWidth(); const pdfHeight = pdf.internal.pageSize.getHeight(); const contentWidthMM = pdfWidth - (margin * 2); const contentHeightMM = pdfHeight - (margin * 2) - 10; const contentWidthPX = Math.floor(contentWidthMM * 3.78); const tempContainerId = 'pdf-render-container'; let tempContainer = document.getElementById(tempContainerId); if (!tempContainer) { tempContainer = document.createElement('div'); tempContainer.id = tempContainerId; tempContainer.style.position = 'absolute'; tempContainer.style.left = '-9999px'; tempContainer.style.top = '-9999px'; tempContainer.style.border = '1px solid transparent'; document.body.appendChild(tempContainer); } else { tempContainer.innerHTML = ''; } tempContainer.style.width = `${contentWidthPX}px`; tempContainer.style.padding = `1px`; tempContainer.style.background = pageBackgroundColor; tempContainer.style.fontFamily = 'monospace'; tempContainer.style.fontSize = '14px'; tempContainer.style.lineHeight = '1.625'; tempContainer.style.color = currentTheme === THEMES.GALAXY ? '#e8eaf6' : '#1f2937'; tempContainer.style.height = 'auto'; tempContainer.style.display = 'inline-block'; const root = ReactDOM.createRoot(tempContainer); root.render(<MarkdownPreview markdownText={contentToExport} theme={currentTheme} />); await new Promise(resolve => setTimeout(resolve, 500)); try { const selectorsAndColors = currentTheme === THEMES.GALAXY ? [ { selector: '.text-\\[\\#e8eaf6\\]', color: '#e8eaf6' }, { selector: '.text-\\[\\#b8bfde\\]', color: '#b8bfde' }, { selector: 'blockquote', color: '#b8bfde' }, { selector: '.border-\\[\\#4a5178\\]', color: '#4a5178', styleProp: 'borderColor' }, { selector: '.bg-\\[\\#2d3561\\]', color: '#2d3561', styleProp: 'backgroundColor' }, { selector: '.text-\\[\\#9b59b6\\]', color: '#9b59b6' }, { selector: '.bg-\\[\\#0d1235\\]', color: '#0d1235', styleProp: 'backgroundColor' }, ] : [ { selector: '.text-gray-800', color: '#1f2937' }, { selector: '.text-gray-600', color: '#4b5563' }, { selector: 'blockquote', color: '#4b5563' }, { selector: '.border-\\[\\#e6ddcc\\]', color: '#e6ddcc', styleProp: 'borderColor' }, { selector: '.bg-\\[\\#fff7ee\\]', color: '#fff7ee', styleProp: 'backgroundColor' }, { selector: '.text-\\[\\#9a8c73\\]', color: '#9a8c73' }, { selector: '.bg-\\[\\#fdf6ec\\]', color: '#fdf6ec', styleProp: 'backgroundColor' }, ]; selectorsAndColors.forEach(({ selector, color, styleProp = 'color' }) => { try { const elements = tempContainer.querySelectorAll(selector); elements.forEach(el => { const className = selector.startsWith('.') ? selector.substring(1).replace(/\\/g, '') : null; if ((className && el.classList.contains(className)) || !selector.startsWith('.')) { el.style[styleProp] = color; } }); } catch (e) { console.warn(`Failed override for selector: ${selector}`, e); } }); } catch (e) { console.warn("Error applying style overrides:", e); } try { const canvas = await html2canvas(tempContainer, { scale: 3, useCORS: true, logging: false, backgroundColor: pageBackgroundColor, width: tempContainer.scrollWidth, height: tempContainer.scrollHeight, windowWidth: tempContainer.scrollWidth, windowHeight: tempContainer.scrollHeight, scrollX: 0, scrollY: 0, removeContainer: false, imageTimeout: 15000 }); const imgData = canvas.toDataURL('image/png'); const imgProps = pdf.getImageProperties(imgData); const canvasWidthPX = canvas.width; const canvasHeightPX = canvas.height; const scaleFactor = contentWidthMM / canvasWidthPX; const totalHeightMM = canvasHeightPX * scaleFactor; const pixelsPerPage = contentHeightMM / scaleFactor; const addPageStyling = () => { pdf.setFillColor(pageBackgroundColor); pdf.rect(0, 0, pdfWidth, pdfHeight, 'F'); pdf.setFontSize(headerFontSize); try { pdf.setFont('times', 'normal'); } catch (e) { pdf.setFont('serif', 'normal'); } pdf.setTextColor(headerTextColor); pdf.text(headerText, margin, headerTopMargin); }; addPageStyling(); let remainingHeight = canvasHeightPX; let currentY = 0; while (remainingHeight > 0) { const heightToUse = Math.min(remainingHeight, pixelsPerPage); const tempCanvas = document.createElement('canvas'); tempCanvas.width = canvasWidthPX; tempCanvas.height = heightToUse; const tempCtx = tempCanvas.getContext('2d'); tempCtx.drawImage( canvas, 0, currentY, canvasWidthPX, heightToUse, 0, 0, canvasWidthPX, heightToUse ); const pageImgData = tempCanvas.toDataURL('image/png'); pdf.addImage( pageImgData, 'PNG', margin, margin, contentWidthMM, heightToUse * scaleFactor, undefined, 'FAST' ); currentY += heightToUse; remainingHeight -= heightToUse; if (remainingHeight > 0) { pdf.addPage(); addPageStyling(); } } pdf.save(filename); } catch (error) { console.error("Error generating PDF:", error); let message = `Failed to export PDF.`; if (error.message && error.message.includes('color function "oklch"')) { message += ' A style used in the note might not be supported.'; } else { message += ` ${error.message || 'Check console for details.'}`; } alert(message); } finally { root.unmount(); if (tempContainer && tempContainer.parentNode) { tempContainer.parentNode.removeChild(tempContainer); } setIsExportingPdf(false); } };
   const toggleFocusMode = () => setFocusMode(prev => !prev);
+  const toggleRuledLines = () => {
+    setRuledLines(prev => {
+      const next = !prev;
+      localStorage.setItem(RULED_LINES_STORAGE_KEY, String(next));
+      return next;
+    });
+  };
+
+  const getTextareaRuledLinesStyle = () => {
+    if (!ruledLines) return undefined;
+
+    const lineColor = currentTheme === THEMES.GALAXY
+      ? 'rgba(74, 81, 120, 0.55)'
+      : 'rgba(230, 221, 204, 0.9)';
+
+    // Must match the textarea's line-height (we enforce leading-7 = 28px)
+    const stepPx = 28;
+
+    return {
+      backgroundImage: `linear-gradient(to bottom, transparent calc(${stepPx}px - 1px), ${lineColor} calc(${stepPx}px - 1px))`,
+      backgroundSize: `100% ${stepPx}px`,
+      backgroundRepeat: 'repeat',
+    };
+  };
+
   const togglePreviewMode = () => { if (!showBeautifyControls) setIsPreviewMode(prev => !prev); };
   useEffect(() => { const loadInitialFiles = async () => { const files = await refreshFileList(); if (files.length > 0) { handleOpenFile(files[0]); } setIsInitialLoad(false); }; loadInitialFiles(); }, [folderId, accessToken]);
   useEffect(() => { if (isInitialLoad || saveStatus !== 'unsaved') { return; } const handler = setTimeout(() => { handleAutoSave(); }, isCanvasMode ? 900 : 1500); return () => { clearTimeout(handler); }; }, [note, noteName, saveStatus, isInitialLoad, isCanvasMode, canvasDirty]);
@@ -310,6 +353,7 @@ export default function OnlineApp({ user, accessToken, folderId, onSignOut, onGo
         <div className="absolute top-3 right-3 sm:top-4 sm:right-6 z-50 flex items-center space-x-2 sm:space-x-3">
             <div className={`flex items-center space-x-2 sm:space-x-3 px-3 sm:px-4 py-2 rounded-full shadow-md border ${currentTheme === THEMES.GALAXY ? 'border-[#4a5178] bg-[#0f1642]/80' : 'border-[#d4c4a8] bg-white/30'}`}>
                 <button onClick={toggleFocusMode} className={`opacity-60 hover:opacity-100 transition ${focusMode ? (currentTheme === THEMES.GALAXY ? 'text-[#f39c12]' : 'text-orange-200') : (currentTheme === THEMES.GALAXY ? 'text-[#b8bfde]' : 'text-gray-600')}`} title={focusMode ? "Exit Focus Mode" : "Focus Mode"}> <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"> <circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="4" /> </svg> </button>
+                <button onClick={toggleRuledLines} className={`opacity-60 hover:opacity-100 transition ${ruledLines ? (currentTheme === THEMES.GALAXY ? 'text-[#f39c12]' : 'text-orange-200') : (currentTheme === THEMES.GALAXY ? 'text-[#b8bfde]' : 'text-gray-600')}`} title={ruledLines ? "Hide ruled lines" : "Show ruled lines"}> <AlignJustify size={20} /> </button>
                 <motion.button onClick={() => setShowFileModal(p => !p)} className={`opacity-60 hover:opacity-100 transition ${currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3]' : 'text-gray-400'}`} title="Open Notes Folder" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}> <FolderOpen size={20} /> </motion.button>
                  <div title={saveStatus === 'saved' ? 'All changes saved' : (saveStatus === 'saving' ? 'Saving...' : 'Unsaved changes')} className="flex items-center">
                     {saveStatus === 'saving' ? (
@@ -352,6 +396,7 @@ export default function OnlineApp({ user, accessToken, folderId, onSignOut, onGo
     )}
   </div>
 </div> </motion.div> </motion.div> )} </AnimatePresence>
+        <AnimatePresence> {showFileModal && ( <motion.div className="fixed inset-0 z-30 bg-black bg-opacity-30 flex items-center justify-center p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} onClick={() => setShowFileModal(false)}> <motion.div className={`rounded-xl shadow-xl w-full max-w-xs max-h-[60vh] overflow-y-auto p-4 ${currentTheme === THEMES.GALAXY ? 'bg-[#0f1642] border border-[#2d3561]' : 'bg-white border border-[#e6ddcc]'}`} initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} transition={{ type: "spring", duration: 0.4 }} onClick={e => e.stopPropagation()}> <div className="flex justify-between items-center mb-3"> <h2 className={`font-serif text-lg ${currentTheme === THEMES.GALAXY ? 'text-[#e8eaf6]' : 'text-gray-800'}`}>Your Notes</h2> <motion.button onClick={() => setShowFileModal(false)} className={`${currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3] hover:text-[#e8eaf6]' : 'text-gray-500 hover:text-gray-800'}`} title="Close" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}> <X size={18} /> </motion.button> </div> {fileList.length === 0 ? ( <p className={`text-sm italic px-2 py-1 ${currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3]' : 'text-gray-500'}`}>No notes found in your Google Drive's "puffnotes" folder.</p> ) : ( <div className="space-y-1"> {fileList.map((file, index) => ( <motion.div key={file.id} className={`flex items-center justify-between gap-2 text-sm font-mono px-2 py-1.5 rounded transition-colors duration-100 ${activeNoteId === file.id ? (currentTheme === THEMES.GALAXY ? 'text-[#f39c12]' : 'text-orange-400') : (currentTheme === THEMES.GALAXY ? 'text-[#e8eaf6]' : 'text-[#333]')}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.03 }} whileHover={{ x: 3 }}> <button onClick={() => handleOpenFile(file)} className={`flex-1 text-left rounded ${currentTheme === THEMES.GALAXY ? 'hover:bg-[#2d3561]' : 'hover:bg-[#f8f6f2]'} px-1 py-0.5`} title={`Open ${file.name}`}> {file.name.replace(/\.md$/, "")} </button> <motion.button onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteFile(file); }} className={`${currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3] hover:text-red-300' : 'text-gray-400 hover:text-red-500'} opacity-70 hover:opacity-100 transition`} title={`Delete ${file.name}`} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}> <Trash2 size={16} /> </motion.button> </motion.div> ))} </div> )} </motion.div> </motion.div> )} </AnimatePresence>
 
         <AnimatePresence> {!isEditorVisible && dropAnimationComplete && ( <motion.div className="fixed bottom-0 left-0 right-0 z-10 flex justify-center" initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: "spring", stiffness: 400, damping: 40, mass: 1 }}> <motion.div className={`border-t rounded-t-2xl shadow-2xl px-6 py-3 flex items-center space-x-3 cursor-pointer ${currentTheme === THEMES.GALAXY ? 'bg-[#0f1642] border-[#2d3561]' : 'bg-white border-[#e6ddcc]'}`} onClick={() => { setDropAnimationComplete(false); setIsEditorVisible(true); }} whileHover={{ y: -2, boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)" }} whileTap={{ scale: 0.98 }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ delay: 0.1 }}> <motion.span className={`font-serif text-lg tracking-tight ${currentTheme === THEMES.GALAXY ? 'text-[#e8eaf6]' : 'text-[#1a1a1a]'}`} animate={{ y: [0, -1, 0] }} transition={{ repeat: Infinity, repeatType: "mirror", duration: 2, ease: "easeInOut" }}> puffnotes </motion.span> <span className={currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3]' : 'text-gray-400'}>|</span> <span className={`font-serif text-sm max-w-[150px] sm:max-w-xs truncate ${currentTheme === THEMES.GALAXY ? 'text-[#b8bfde]' : 'text-gray-500'}`} title={noteName || "untitled"}> {noteName || "untitled"} </span> </motion.div> </motion.div> )} </AnimatePresence>
 
@@ -430,7 +475,7 @@ export default function OnlineApp({ user, accessToken, folderId, onSignOut, onGo
                ) : isPreviewMode && !showBeautifyControls ? (
                   <MarkdownPreview markdownText={note} theme={currentTheme} />
                ) : (
-                  <textarea value={showBeautifyControls ? previewNote : note} onChange={handleNoteChange} placeholder="A quiet place to write..." className={`w-full h-full font-mono text-sm bg-transparent resize-none outline-none leading-relaxed placeholder:italic transition-all duration-300 ${focusMode ? 'text-base px-2' : 'text-sm'} [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${currentTheme === THEMES.GALAXY ? 'text-[#e8eaf6] placeholder:text-[#6c7b95]' : 'text-gray-800 placeholder:text-gray-400'}`} readOnly={isBeautifying || showBeautifyControls} />
+                  <textarea value={showBeautifyControls ? previewNote : note} onChange={handleNoteChange} placeholder="A quiet place to write..." style={getTextareaRuledLinesStyle()} className={`w-full h-full font-mono text-sm bg-transparent resize-none outline-none leading-7 placeholder:italic transition-all duration-300 ${focusMode ? 'text-base px-2' : 'text-sm'} [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${currentTheme === THEMES.GALAXY ? 'text-[#e8eaf6] placeholder:text-[#6c7b95]' : 'text-gray-800 placeholder:text-gray-400'}`} readOnly={isBeautifying || showBeautifyControls} />
                )}
             </div>
              <AnimatePresence>
