@@ -4,11 +4,12 @@ import useFileSystemAccess from '../hooks/useFileSystemAccess';
 import {
   FilePlus, FolderOpen, ChevronDown, ChevronUp, X, Wand2, Save, Check,
   RotateCw, XCircle, CheckCircle, Info, KeyRound, AlertTriangle,
-  Eye, Pen, Keyboard, Home, HelpCircle, Settings
+  Eye, Pen, Keyboard, Home, HelpCircle, Settings, Paintbrush, Eraser, Trash2
 } from 'lucide-react';
 import { beautifyNoteWithGroq } from '../lib/groq';
 import { AnimatePresence, motion } from 'framer-motion';
 import MarkdownPreview from './MarkdownPreview';
+import CanvasEditor from './CanvasEditor';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import * as ReactDOM from 'react-dom/client';
@@ -17,8 +18,10 @@ import OnboardingModal from './OnboardingModal';
 import ThemeSwitcher from './ThemeSwitcher';
 import SettingsModal from './SettingsModal';
 import { THEMES, getStoredTheme, setStoredTheme, getThemeColors, getThemeVideos } from '../lib/themeManager';
+import { CANVAS_EXT, toCanvasFilename } from '../lib/canvasNotes';
 
 const USER_API_KEY_STORAGE_KEY = 'puffnotes_groqUserApiKey_v1';
+const CANVAS_MODE_STORAGE_KEY = 'puffnotes_canvasMode_v1';
 const DEFAULT_GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || '';
 
 const offlineOnboardingSteps = [
@@ -85,6 +88,14 @@ export default function OfflineApp({ onGoToLanding }) {
   const [isBeautifying, setIsBeautifying] = useState(false);
   const [saveIndicator, setSaveIndicator] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
+  const [isCanvasMode, setIsCanvasMode] = useState(() => localStorage.getItem(CANVAS_MODE_STORAGE_KEY) === 'true');
+  const [canvasBrushColor, setCanvasBrushColor] = useState('#111827');
+  const [canvasBrushSize, setCanvasBrushSize] = useState(4);
+  const [canvasEraser, setCanvasEraser] = useState(false);
+  const [canvasList, setCanvasList] = useState([]);
+  const [activeCanvasName, setActiveCanvasName] = useState("");
+  const [canvasDirty, setCanvasDirty] = useState(false);
+  const canvasRef = useRef(null);
   const [dropAnimationComplete, setDropAnimationComplete] = useState(true);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
@@ -93,8 +104,8 @@ export default function OfflineApp({ onGoToLanding }) {
   const [activeFileName, setActiveFileName] = useState("");
   
   const {
-    folderHandle, pickFolder, saveNote,
-    listFiles, loadNote, deleteNote,
+    folderHandle, pickFolder, saveNote, saveBlob,
+    listFiles, listCanvasFiles, loadNote, deleteNote,
   } = useFileSystemAccess();
 
   const handleFinishOnboarding = () => {
@@ -120,10 +131,50 @@ export default function OfflineApp({ onGoToLanding }) {
     } 
   }, [currentTheme]); // Re-trigger when theme changes
   
-  const refreshFileList = async () => { if (folderHandle) { try { const files = await listFiles(); setFileList(files || []); } catch (err) { console.error("Failed to refresh file list:", err); setFileList([]); } } };
-  const handleOpenFile = async (filename) => { if (!filename) return; try { const content = await loadNote(filename); if (content === null) { alert(`Could not load file: ${filename}. Folder permissions might have changed.`); return; } const baseName = filename.replace(/\.md$/, ""); setNote(content); setNoteName(baseName); setActiveFileName(filename); setIsFirstSave(false); setShowFileModal(false); setPreviewNote(""); setShowBeautifyControls(false); setOriginalNote(""); setIsPreviewMode(false); } catch (err) { console.error("Error opening file:", err); alert(`Failed to open file: ${filename}. Error: ${err.message}`); } };
-  const handleNewNote = () => { setNote(""); setNoteName("untitled"); setActiveFileName(""); setIsFirstSave(true); setPreviewNote(""); setShowBeautifyControls(false); setOriginalNote(""); setIsPreviewMode(false); };
-  const handleSave = async () => { let currentFolderHandle = folderHandle; if (!currentFolderHandle) { try { const picked = await pickFolder(); if (!picked) return; currentFolderHandle = picked; } catch (err) { console.error("Error picking folder:", err); if (err.name !== 'AbortError') { alert("Could not get permission to access the folder."); } return; } } if (!noteName.trim()) { alert("Please enter a name for your note before saving."); return; } const filename = noteName.endsWith(".md") ? noteName : `${noteName}.md`; try { const savedAs = await saveNote(filename, note, isFirstSave); if (savedAs) { const baseName = savedAs.replace(/\.md$/, ""); setNoteName(baseName); setActiveFileName(savedAs); setIsFirstSave(false); refreshFileList(); setSaveIndicator(true); setTimeout(() => setSaveIndicator(false), 1500); } else if (isFirstSave) { console.log("Save As dialog cancelled."); } } catch (err) { console.error("Error saving file:", err); alert(`Failed to save note: ${filename}. Error: ${err.message}`); } };
+  const refreshFileList = async () => { if (folderHandle) { try { const files = await listFiles(); setFileList(files || []); const canvases = await listCanvasFiles(); setCanvasList(canvases || []); } catch (err) { console.error("Failed to refresh file list:", err); setFileList([]); setCanvasList([]); } } };
+  const handleOpenFile = async (filename) => { if (!filename) return; try { const content = await loadNote(filename); if (content === null) { alert(`Could not load file: ${filename}. Folder permissions might have changed.`); return; } const baseName = filename.replace(/\.md$/, ""); setIsCanvasMode(false); localStorage.setItem(CANVAS_MODE_STORAGE_KEY, 'false'); setCanvasEraser(false); setCanvasDirty(false); setNote(content); setNoteName(baseName); setActiveFileName(filename); setActiveCanvasName(""); setIsFirstSave(false); setShowFileModal(false); setPreviewNote(""); setShowBeautifyControls(false); setOriginalNote(""); setIsPreviewMode(false); } catch (err) { console.error("Error opening file:", err); alert(`Failed to open file: ${filename}. Error: ${err.message}`); } };
+
+  const handleOpenCanvas = async (filename) => {
+    if (!filename) return;
+    try {
+      if (!folderHandle) {
+        alert('Please select a folder first.');
+        return;
+      }
+      const fileHandle = await folderHandle.getFileHandle(filename);
+      const file = await fileHandle.getFile();
+      const url = URL.createObjectURL(file);
+
+      setIsCanvasMode(true);
+      localStorage.setItem(CANVAS_MODE_STORAGE_KEY, 'true');
+      setIsPreviewMode(false);
+      setShowBeautifyControls(false);
+      setPreviewNote('');
+      setOriginalNote('');
+
+      setActiveCanvasName(filename);
+      setActiveFileName('');
+      setNoteName(filename.replace(CANVAS_EXT, ''));
+
+      setTimeout(() => {
+        const canvas = canvasRef.current;
+        canvas?.__puff_loadImageUrl?.(url);
+        URL.revokeObjectURL(url);
+      }, 50);
+
+      setShowFileModal(false);
+      setCanvasDirty(false);
+    } catch (err) {
+      console.error('Error opening canvas:', err);
+      alert(`Failed to open canvas: ${filename}. Error: ${err.message}`);
+    }
+  };
+  const handleNewNote = () => { setIsCanvasMode(false); localStorage.setItem(CANVAS_MODE_STORAGE_KEY, 'false'); setCanvasEraser(false); setCanvasDirty(false); setActiveCanvasName(""); setNote(""); setNoteName("untitled"); setActiveFileName(""); setIsFirstSave(true); setPreviewNote(""); setShowBeautifyControls(false); setOriginalNote(""); setIsPreviewMode(false); };
+  const handleSave = async () => {
+    // In canvas mode we autosave (and manual save is not used)
+    if (isCanvasMode) return;
+
+    let currentFolderHandle = folderHandle; if (!currentFolderHandle) { try { const picked = await pickFolder(); if (!picked) return; currentFolderHandle = picked; } catch (err) { console.error("Error picking folder:", err); if (err.name !== 'AbortError') { alert("Could not get permission to access the folder."); } return; } } if (!noteName.trim()) { alert("Please enter a name for your note before saving."); return; } const filename = noteName.endsWith(".md") ? noteName : `${noteName}.md`; try { const savedAs = await saveNote(filename, note, isFirstSave); if (savedAs) { const baseName = savedAs.replace(/\.md$/, ""); setNoteName(baseName); setActiveFileName(savedAs); setIsFirstSave(false); refreshFileList(); setSaveIndicator(true); setTimeout(() => setSaveIndicator(false), 1500); } else if (isFirstSave) { console.log("Save As dialog cancelled."); } } catch (err) { console.error("Error saving file:", err); alert(`Failed to save note: ${filename}. Error: ${err.message}`); } };
   const handleBeautify = async (isRegeneration = false) => { const noteToProcess = isRegeneration ? (originalNote || note) : note; if (!noteToProcess.trim()) return; const keyToUse = userApiKey || DEFAULT_GROQ_API_KEY; if (!keyToUse) { console.error("No Groq API Key available (User or Default)."); setApiKeyError(true); setApiKeySaveFeedback(''); setShowSettingsModal(true); setTimeout(() => apiKeyInputRef.current?.focus(), 100); return; } setIsBeautifying(true); if (!isRegeneration) { setOriginalNote(note); } setApiKeyError(false); setApiKeySaveFeedback(''); try { const result = await beautifyNoteWithGroq(noteToProcess, keyToUse); setPreviewNote(result); setShowBeautifyControls(true); setIsPreviewMode(false); } catch (err) { console.error("Beautify request failed:", err); let userMessage = `AI Beautify failed: ${err.message || 'Unknown error'}`; const isAuthOrRateLimitError = err.status === 401 || err.status === 403 || err.status === 429; if (!userApiKey && keyToUse === DEFAULT_GROQ_API_KEY && isAuthOrRateLimitError) { userMessage = "The default AI key might be rate-limited or invalid. Please enter your own free Groq API key to continue."; setApiKeyError(true); setShowSettingsModal(true); setTimeout(() => apiKeyInputRef.current?.focus(), 100); } else if (userApiKey && keyToUse === userApiKey && isAuthOrRateLimitError) { userMessage = "Your Groq API key seems invalid or rate-limited. Please check it or generate a new one."; setShowSettingsModal(true); setTimeout(() => apiKeyInputRef.current?.focus(), 100); alert(userMessage); } else { alert(userMessage); } setPreviewNote(""); setShowBeautifyControls(false); } finally { setIsBeautifying(false); } };
   const acceptBeautified = () => { setNote(previewNote); setPreviewNote(""); setOriginalNote(""); setShowBeautifyControls(false); setIsPreviewMode(false); };
   const rejectBeautified = () => { setPreviewNote(""); setShowBeautifyControls(false); setIsPreviewMode(false); };
@@ -132,8 +183,88 @@ export default function OfflineApp({ onGoToLanding }) {
   const handleFolderButton = async () => { if (!folderHandle) { try { await pickFolder(); } catch (err) { if (err.name !== 'AbortError') { console.error("Error picking folder:", err); alert("Could not get permission to access the folder."); } } } else { setShowFileModal((prev) => !prev); if (!showFileModal) { refreshFileList(); } } };
   const toggleFocusMode = () => { setFocusMode(prev => !prev); };
   const togglePreviewMode = () => { if (showBeautifyControls) return; setIsPreviewMode(prev => !prev); };
-  const handleExportPdf = async () => { const contentToExport = showBeautifyControls ? previewNote : note; if (!contentToExport.trim() || isExportingPdf) return; setIsExportingPdf(true); const filename = (noteName.trim() || "untitled") + ".pdf"; const pageBackgroundColor = currentTheme === THEMES.GALAXY ? '#0a0e27' : '#fdfbf7'; const headerTextColor = currentTheme === THEMES.GALAXY ? '#6c7b95' : '#a8a29a'; const headerText = "puffnotes"; const headerFontSize = 9; const margin = 18; const headerTopMargin = 15; const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4', putOnlyUsedFonts: true, floatPrecision: 'smart' }); const pdfWidth = pdf.internal.pageSize.getWidth(); const pdfHeight = pdf.internal.pageSize.getHeight(); const contentWidthMM = pdfWidth - (margin * 2); const contentHeightMM = pdfHeight - (margin * 2) - 10; const contentWidthPX = Math.floor(contentWidthMM * 3.78); const tempContainerId = 'pdf-render-container'; let tempContainer = document.getElementById(tempContainerId); if (!tempContainer) { tempContainer = document.createElement('div'); tempContainer.id = tempContainerId; tempContainer.style.position = 'absolute'; tempContainer.style.left = '-9999px'; tempContainer.style.top = '-9999px'; tempContainer.style.border = '1px solid transparent'; document.body.appendChild(tempContainer); } else { tempContainer.innerHTML = ''; } tempContainer.style.width = `${contentWidthPX}px`; tempContainer.style.padding = `1px`; tempContainer.style.background = pageBackgroundColor; tempContainer.style.fontFamily = 'monospace'; tempContainer.style.fontSize = '14px'; tempContainer.style.lineHeight = '1.625'; tempContainer.style.color = currentTheme === THEMES.GALAXY ? '#e8eaf6' : '#1f2937'; tempContainer.style.height = 'auto'; tempContainer.style.display = 'inline-block'; const root = ReactDOM.createRoot(tempContainer); root.render(<MarkdownPreview markdownText={contentToExport} theme={currentTheme} />); await new Promise(resolve => setTimeout(resolve, 500)); try { const selectorsAndColors = currentTheme === THEMES.GALAXY ? [ { selector: '.text-\\[\\#e8eaf6\\]', color: '#e8eaf6' }, { selector: '.text-\\[\\#b8bfde\\]', color: '#b8bfde' }, { selector: 'blockquote', color: '#b8bfde' }, { selector: '.border-\\[\\#4a5178\\]', color: '#4a5178', styleProp: 'borderColor' }, { selector: '.bg-\\[\\#2d3561\\]', color: '#2d3561', styleProp: 'backgroundColor' }, { selector: '.text-\\[\\#9b59b6\\]', color: '#9b59b6' }, { selector: '.bg-\\[\\#0d1235\\]', color: '#0d1235', styleProp: 'backgroundColor' }, ] : [ { selector: '.text-gray-800', color: '#1f2937' }, { selector: '.text-gray-600', color: '#4b5563' }, { selector: 'blockquote', color: '#4b5563' }, { selector: '.border-\\[\\#e6ddcc\\]', color: '#e6ddcc', styleProp: 'borderColor' }, { selector: '.bg-\\[\\#fff7ee\\]', color: '#fff7ee', styleProp: 'backgroundColor' }, { selector: '.text-\\[\\#9a8c73\\]', color: '#9a8c73' }, { selector: '.bg-\\[\\#fdf6ec\\]', color: '#fdf6ec', styleProp: 'backgroundColor' }, ]; selectorsAndColors.forEach(({ selector, color, styleProp = 'color' }) => { try { const elements = tempContainer.querySelectorAll(selector); elements.forEach(el => { const className = selector.startsWith('.') ? selector.substring(1).replace(/\\/g, '') : null; if ((className && el.classList.contains(className)) || !selector.startsWith('.')) { el.style[styleProp] = color; } }); } catch (e) { console.warn(`Failed override for selector: ${selector}`, e); } }); } catch (e) { console.warn("Error applying style overrides:", e); } try { const canvas = await html2canvas(tempContainer, { scale: 3, useCORS: true, logging: false, backgroundColor: pageBackgroundColor, width: tempContainer.scrollWidth, height: tempContainer.scrollHeight, windowWidth: tempContainer.scrollWidth, windowHeight: tempContainer.scrollHeight, scrollX: 0, scrollY: 0, removeContainer: false, imageTimeout: 15000 }); const imgData = canvas.toDataURL('image/png'); const imgProps = pdf.getImageProperties(imgData); const canvasWidthPX = canvas.width; const canvasHeightPX = canvas.height; const scaleFactor = contentWidthMM / canvasWidthPX; const totalHeightMM = canvasHeightPX * scaleFactor; const pixelsPerPage = contentHeightMM / scaleFactor; const addPageStyling = () => { pdf.setFillColor(pageBackgroundColor); pdf.rect(0, 0, pdfWidth, pdfHeight, 'F'); pdf.setFontSize(headerFontSize); try { pdf.setFont('times', 'normal'); } catch (e) { pdf.setFont('serif', 'normal'); } pdf.setTextColor(headerTextColor); pdf.text(headerText, margin, headerTopMargin); }; addPageStyling(); let remainingHeight = canvasHeightPX; let currentY = 0; while (remainingHeight > 0) { const heightToUse = Math.min(remainingHeight, pixelsPerPage); const tempCanvas = document.createElement('canvas'); tempCanvas.width = canvasWidthPX; tempCanvas.height = heightToUse; const tempCtx = tempCanvas.getContext('2d'); tempCtx.drawImage( canvas, 0, currentY, canvasWidthPX, heightToUse, 0, 0, canvasWidthPX, heightToUse ); const pageImgData = tempCanvas.toDataURL('image/png'); pdf.addImage( pageImgData, 'PNG', margin, margin, contentWidthMM, heightToUse * scaleFactor, undefined, 'FAST' ); currentY += heightToUse; remainingHeight -= heightToUse; if (remainingHeight > 0) { pdf.addPage(); addPageStyling(); } } pdf.save(filename); } catch (error) { console.error("Error generating PDF:", error); let message = `Failed to export PDF.`; if (error.message && error.message.includes('color function "oklch"')) { message += ' A style used in the note might not be supported.'; } else { message += ` ${error.message || 'Check console for details.'}`; } alert(message); } finally { root.unmount(); if (tempContainer && tempContainer.parentNode) { tempContainer.parentNode.removeChild(tempContainer); } setIsExportingPdf(false); } };
-  useEffect(() => { const autoSave = async () => { const shouldSave = !isFirstSave && folderHandle && noteName.trim() && !showBeautifyControls; if (!shouldSave) return; const newFilename = noteName.endsWith(".md") ? noteName : `${noteName}.md`; if (newFilename === activeFileName) { try { await saveNote(activeFileName, note, false); } catch (err) { console.warn("Autosave failed:", err); } } else { try { const savedAs = await saveNote(newFilename, note, true); if (savedAs) { if (activeFileName) { await deleteNote(activeFileName); } const baseName = savedAs.replace(/\.md$/, ""); setNoteName(baseName); setActiveFileName(savedAs); await refreshFileList(); } } catch (err) { console.error("Rename (save/delete) operation failed:", err); } } }; const debounceTimeout = setTimeout(autoSave, 850); return () => clearTimeout(debounceTimeout); }, [note, noteName]);
+  const handleExportPdf = async () => {
+    if (isExportingPdf) return;
+
+    // Canvas export: embed the drawn image into a PDF page.
+    if (isCanvasMode) {
+      try {
+        setIsExportingPdf(true);
+        const filename = (noteName.trim() || "untitled") + ".pdf";
+        const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4', putOnlyUsedFonts: true, floatPrecision: 'smart' });
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const margin = 12;
+        const contentWidth = pdfWidth - margin * 2;
+        const contentHeight = pdfHeight - margin * 2;
+
+        const canvas = canvasRef.current;
+        const blob = await canvas?.__puff_exportPNGBlob?.();
+        if (!blob) throw new Error('Canvas not ready');
+        const dataUrl = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.readAsDataURL(blob);
+        });
+
+        pdf.addImage(dataUrl, 'PNG', margin, margin, contentWidth, contentHeight, undefined, 'FAST');
+        pdf.save(filename);
+      } catch (err) {
+        console.error('Canvas PDF export failed:', err);
+        alert(`Failed to export PDF. ${err.message}`);
+      } finally {
+        setIsExportingPdf(false);
+      }
+      return;
+    }
+
+    const contentToExport = showBeautifyControls ? previewNote : note; if (!contentToExport.trim()) return; setIsExportingPdf(true); const filename = (noteName.trim() || "untitled") + ".pdf"; const pageBackgroundColor = currentTheme === THEMES.GALAXY ? '#0a0e27' : '#fdfbf7'; const headerTextColor = currentTheme === THEMES.GALAXY ? '#6c7b95' : '#a8a29a'; const headerText = "puffnotes"; const headerFontSize = 9; const margin = 18; const headerTopMargin = 15; const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4', putOnlyUsedFonts: true, floatPrecision: 'smart' }); const pdfWidth = pdf.internal.pageSize.getWidth(); const pdfHeight = pdf.internal.pageSize.getHeight(); const contentWidthMM = pdfWidth - (margin * 2); const contentHeightMM = pdfHeight - (margin * 2) - 10; const contentWidthPX = Math.floor(contentWidthMM * 3.78); const tempContainerId = 'pdf-render-container'; let tempContainer = document.getElementById(tempContainerId); if (!tempContainer) { tempContainer = document.createElement('div'); tempContainer.id = tempContainerId; tempContainer.style.position = 'absolute'; tempContainer.style.left = '-9999px'; tempContainer.style.top = '-9999px'; tempContainer.style.border = '1px solid transparent'; document.body.appendChild(tempContainer); } else { tempContainer.innerHTML = ''; } tempContainer.style.width = `${contentWidthPX}px`; tempContainer.style.padding = `1px`; tempContainer.style.background = pageBackgroundColor; tempContainer.style.fontFamily = 'monospace'; tempContainer.style.fontSize = '14px'; tempContainer.style.lineHeight = '1.625'; tempContainer.style.color = currentTheme === THEMES.GALAXY ? '#e8eaf6' : '#1f2937'; tempContainer.style.height = 'auto'; tempContainer.style.display = 'inline-block'; const root = ReactDOM.createRoot(tempContainer); root.render(<MarkdownPreview markdownText={contentToExport} theme={currentTheme} />); await new Promise(resolve => setTimeout(resolve, 500)); try { const selectorsAndColors = currentTheme === THEMES.GALAXY ? [ { selector: '.text-\\[\\#e8eaf6\\]', color: '#e8eaf6' }, { selector: '.text-\\[\\#b8bfde\\]', color: '#b8bfde' }, { selector: 'blockquote', color: '#b8bfde' }, { selector: '.border-\\[\\#4a5178\\]', color: '#4a5178', styleProp: 'borderColor' }, { selector: '.bg-\\[\\#2d3561\\]', color: '#2d3561', styleProp: 'backgroundColor' }, { selector: '.text-\\[\\#9b59b6\\]', color: '#9b59b6' }, { selector: '.bg-\\[\\#0d1235\\]', color: '#0d1235', styleProp: 'backgroundColor' }, ] : [ { selector: '.text-gray-800', color: '#1f2937' }, { selector: '.text-gray-600', color: '#4b5563' }, { selector: 'blockquote', color: '#4b5563' }, { selector: '.border-\\[\\#e6ddcc\\]', color: '#e6ddcc', styleProp: 'borderColor' }, { selector: '.bg-\\[\\#fff7ee\\]', color: '#fff7ee', styleProp: 'backgroundColor' }, { selector: '.text-\\[\\#9a8c73\\]', color: '#9a8c73' }, { selector: '.bg-\\[\\#fdf6ec\\]', color: '#fdf6ec', styleProp: 'backgroundColor' }, ]; selectorsAndColors.forEach(({ selector, color, styleProp = 'color' }) => { try { const elements = tempContainer.querySelectorAll(selector); elements.forEach(el => { const className = selector.startsWith('.') ? selector.substring(1).replace(/\\/g, '') : null; if ((className && el.classList.contains(className)) || !selector.startsWith('.')) { el.style[styleProp] = color; } }); } catch (e) { console.warn(`Failed override for selector: ${selector}`, e); } }); } catch (e) { console.warn("Error applying style overrides:", e); } try { const canvas = await html2canvas(tempContainer, { scale: 3, useCORS: true, logging: false, backgroundColor: pageBackgroundColor, width: tempContainer.scrollWidth, height: tempContainer.scrollHeight, windowWidth: tempContainer.scrollWidth, windowHeight: tempContainer.scrollHeight, scrollX: 0, scrollY: 0, removeContainer: false, imageTimeout: 15000 }); const imgData = canvas.toDataURL('image/png'); const imgProps = pdf.getImageProperties(imgData); const canvasWidthPX = canvas.width; const canvasHeightPX = canvas.height; const scaleFactor = contentWidthMM / canvasWidthPX; const totalHeightMM = canvasHeightPX * scaleFactor; const pixelsPerPage = contentHeightMM / scaleFactor; const addPageStyling = () => { pdf.setFillColor(pageBackgroundColor); pdf.rect(0, 0, pdfWidth, pdfHeight, 'F'); pdf.setFontSize(headerFontSize); try { pdf.setFont('times', 'normal'); } catch (e) { pdf.setFont('serif', 'normal'); } pdf.setTextColor(headerTextColor); pdf.text(headerText, margin, headerTopMargin); }; addPageStyling(); let remainingHeight = canvasHeightPX; let currentY = 0; while (remainingHeight > 0) { const heightToUse = Math.min(remainingHeight, pixelsPerPage); const tempCanvas = document.createElement('canvas'); tempCanvas.width = canvasWidthPX; tempCanvas.height = heightToUse; const tempCtx = tempCanvas.getContext('2d'); tempCtx.drawImage( canvas, 0, currentY, canvasWidthPX, heightToUse, 0, 0, canvasWidthPX, heightToUse ); const pageImgData = tempCanvas.toDataURL('image/png'); pdf.addImage( pageImgData, 'PNG', margin, margin, contentWidthMM, heightToUse * scaleFactor, undefined, 'FAST' ); currentY += heightToUse; remainingHeight -= heightToUse; if (remainingHeight > 0) { pdf.addPage(); addPageStyling(); } } pdf.save(filename); } catch (error) { console.error("Error generating PDF:", error); let message = `Failed to export PDF.`; if (error.message && error.message.includes('color function "oklch"')) { message += ' A style used in the note might not be supported.'; } else { message += ` ${error.message || 'Check console for details.'}`; } alert(message); } finally { root.unmount(); if (tempContainer && tempContainer.parentNode) { tempContainer.parentNode.removeChild(tempContainer); } setIsExportingPdf(false); } };
+  useEffect(() => {
+    const autoSave = async () => {
+      // Canvas autosave
+      if (isCanvasMode) {
+        if (!folderHandle || !noteName.trim() || !canvasDirty) return;
+        try {
+          const canvas = canvasRef.current;
+          const blob = await canvas?.__puff_exportPNGBlob?.();
+          if (!blob) return;
+          const filename = toCanvasFilename(noteName);
+          const saved = await saveBlob(filename, blob);
+          if (saved) {
+            setActiveCanvasName(saved);
+            setCanvasDirty(false);
+            refreshFileList();
+          }
+        } catch (err) {
+          console.warn('Canvas autosave failed:', err);
+        }
+        return;
+      }
+
+      const shouldSave = !isFirstSave && folderHandle && noteName.trim() && !showBeautifyControls;
+      if (!shouldSave) return;
+      const newFilename = noteName.endsWith(".md") ? noteName : `${noteName}.md`;
+      if (newFilename === activeFileName) {
+        try { await saveNote(activeFileName, note, false); } catch (err) { console.warn("Autosave failed:", err); }
+      } else {
+        try {
+          const savedAs = await saveNote(newFilename, note, true);
+          if (savedAs) {
+            if (activeFileName) { await deleteNote(activeFileName); }
+            const baseName = savedAs.replace(/\.md$/, "");
+            setNoteName(baseName);
+            setActiveFileName(savedAs);
+            await refreshFileList();
+          }
+        } catch (err) {
+          console.error("Rename (save/delete) operation failed:", err);
+        }
+      }
+    };
+
+    const debounceTimeout = setTimeout(autoSave, isCanvasMode ? 900 : 850);
+    return () => clearTimeout(debounceTimeout);
+  }, [note, noteName, isCanvasMode, canvasDirty]);
   useEffect(() => { if (folderHandle) { refreshFileList(); } else { setFileList([]); } }, [folderHandle]);
   useEffect(() => { const handleKeyDown = (e) => { const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0; const ctrlOrCmd = isMac ? e.metaKey : e.ctrlKey; const isTyping = ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName); if (isTyping && document.activeElement !== document.querySelector("textarea")) return; if (ctrlOrCmd && e.key === 'Enter') { e.preventDefault(); if (!isBeautifying && note.trim()) handleBeautify(false); } else if (ctrlOrCmd && e.key.toLowerCase() === 'p') { e.preventDefault(); if (!showBeautifyControls) setIsPreviewMode(prev => !prev); } else if (ctrlOrCmd && e.key.toLowerCase() === 'e') { e.preventDefault(); handleExportPdf(); } else if (ctrlOrCmd && e.key.toLowerCase() === 'k') { e.preventDefault(); handleNewNote(); } else if (ctrlOrCmd && e.key.toLowerCase() === 's') { e.preventDefault(); handleSave(); } else if (ctrlOrCmd && e.shiftKey && e.key.toLowerCase() === 'f') { e.preventDefault(); toggleFocusMode(); } else if (ctrlOrCmd && e.key.toLowerCase() === 'o') { e.preventDefault(); handleFolderButton(); } else if (ctrlOrCmd && e.key.toLowerCase() === '.') { setDropAnimationComplete(false); setIsEditorVisible(prev => !prev); } else if (ctrlOrCmd && e.key === '/') { setShowShortcutsModal(prev => !prev); } }; window.addEventListener('keydown', handleKeyDown); return () => window.removeEventListener('keydown', handleKeyDown); }, [ note, isBeautifying, showBeautifyControls, handleBeautify, handleExportPdf, handleNewNote, handleSave, toggleFocusMode, handleFolderButton, setShowShortcutsModal ]);
 
@@ -204,7 +335,25 @@ export default function OfflineApp({ onGoToLanding }) {
           />
         </div>
         
-        <AnimatePresence> {showFileModal && folderHandle && ( <motion.div className="fixed inset-0 z-30 bg-black bg-opacity-30 flex items-center justify-center p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} onClick={() => setShowFileModal(false)}> <motion.div className={`rounded-xl shadow-xl w-full max-w-xs max-h-[60vh] overflow-y-auto p-4 ${currentTheme === THEMES.GALAXY ? 'bg-[#0f1642] border border-[#2d3561]' : 'bg-white border border-[#e6ddcc]'}`} initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} transition={{ type: "spring", duration: 0.4 }} onClick={e => e.stopPropagation()}> <div className="flex justify-between items-center mb-3"> <h2 className={`font-serif text-lg ${currentTheme === THEMES.GALAXY ? 'text-[#e8eaf6]' : 'text-gray-800'}`}>Your Notes</h2> <motion.button onClick={() => setShowFileModal(false)} className={`${currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3] hover:text-[#e8eaf6]' : 'text-gray-500 hover:text-gray-800'}`} title="Close" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}> <X size={18} /> </motion.button> </div> {fileList.length === 0 ? ( <p className={`text-sm italic px-2 py-1 ${currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3]' : 'text-gray-500'}`}>No markdown notes (.md) found in the selected folder.</p> ) : ( <div className="space-y-1"> {fileList.map((filename, index) => ( <motion.button key={filename} onClick={() => handleOpenFile(filename)} className={`block w-full text-left text-sm font-mono px-2 py-1.5 rounded transition-colors duration-100 ${currentTheme === THEMES.GALAXY ? 'text-[#e8eaf6] hover:bg-[#2d3561]' : 'text-[#333] hover:bg-[#f8f6f2]'}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.03 }} whileHover={{ x: 3 }} title={`Open ${filename}`}> {filename.replace(/\.md$/, "")} </motion.button> ))} </div> )} <button onClick={pickFolder} className={`mt-4 w-full text-center text-xs underline py-1 ${currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3] hover:text-[#e8eaf6]' : 'text-gray-500 hover:text-gray-700'}`}> Change Folder </button> </motion.div> </motion.div> )} </AnimatePresence>
+        <AnimatePresence> {showFileModal && folderHandle && ( <motion.div className="fixed inset-0 z-30 bg-black bg-opacity-30 flex items-center justify-center p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} onClick={() => setShowFileModal(false)}> <motion.div className={`rounded-xl shadow-xl w-full max-w-xs max-h-[60vh] overflow-y-auto p-4 ${currentTheme === THEMES.GALAXY ? 'bg-[#0f1642] border border-[#2d3561]' : 'bg-white border border-[#e6ddcc]'}`} initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} transition={{ type: "spring", duration: 0.4 }} onClick={e => e.stopPropagation()}> <div className="flex justify-between items-center mb-3"> <h2 className={`font-serif text-lg ${currentTheme === THEMES.GALAXY ? 'text-[#e8eaf6]' : 'text-gray-800'}`}>Your Notes</h2> <motion.button onClick={() => setShowFileModal(false)} className={`${currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3] hover:text-[#e8eaf6]' : 'text-gray-500 hover:text-gray-800'}`} title="Close" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}> <X size={18} /> </motion.button> </div> <div className="space-y-4">
+  <div>
+    <h3 className={`font-serif text-xs uppercase tracking-wider mb-2 ${currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3]' : 'text-gray-500'}`}>Markdown</h3>
+    {fileList.length === 0 ? (
+      <p className={`text-sm italic px-2 py-1 ${currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3]' : 'text-gray-500'}`}>No markdown notes (.md) found in the selected folder.</p>
+    ) : (
+      <div className="space-y-1"> {fileList.map((filename, index) => ( <motion.button key={filename} onClick={() => handleOpenFile(filename)} className={`block w-full text-left text-sm font-mono px-2 py-1.5 rounded transition-colors duration-100 ${currentTheme === THEMES.GALAXY ? 'text-[#e8eaf6] hover:bg-[#2d3561]' : 'text-[#333] hover:bg-[#f8f6f2]'}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.03 }} whileHover={{ x: 3 }} title={`Open ${filename}`}> {filename.replace(/\.md$/, "")} </motion.button> ))} </div>
+    )}
+  </div>
+
+  <div>
+    <h3 className={`font-serif text-xs uppercase tracking-wider mb-2 ${currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3]' : 'text-gray-500'}`}>Canvases</h3>
+    {canvasList.length === 0 ? (
+      <p className={`text-sm italic px-2 py-1 ${currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3]' : 'text-gray-500'}`}>No handwritten canvases found.</p>
+    ) : (
+      <div className="space-y-1"> {canvasList.map((filename, index) => ( <motion.button key={filename} onClick={() => handleOpenCanvas(filename)} className={`block w-full text-left text-sm font-mono px-2 py-1.5 rounded transition-colors duration-100 ${currentTheme === THEMES.GALAXY ? 'text-[#e8eaf6] hover:bg-[#2d3561]' : 'text-[#333] hover:bg-[#f8f6f2]'}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.03 }} whileHover={{ x: 3 }} title={`Open ${filename}`}> {filename.replace(CANVAS_EXT, "")} </motion.button> ))} </div>
+    )}
+  </div>
+</div> <button onClick={pickFolder} className={`mt-4 w-full text-center text-xs underline py-1 ${currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3] hover:text-[#e8eaf6]' : 'text-gray-500 hover:text-gray-700'}`}> Change Folder </button> </motion.div> </motion.div> )} </AnimatePresence>
 
         <AnimatePresence> {!isEditorVisible && dropAnimationComplete && ( <motion.div className="fixed bottom-0 left-0 right-0 z-10 flex justify-center" initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: "spring", stiffness: 400, damping: 40, mass: 1 }}> <motion.div className={`border-t rounded-t-2xl shadow-2xl px-6 py-3 flex items-center space-x-3 cursor-pointer ${currentTheme === THEMES.GALAXY ? 'bg-[#0f1642] border-[#2d3561]' : 'bg-white border-[#e6ddcc]'}`} onClick={() => { setDropAnimationComplete(false); setIsEditorVisible(true); }} whileHover={{ y: -2, boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)" }} whileTap={{ scale: 0.98 }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ delay: 0.1 }}> <motion.span className={`font-serif text-lg tracking-tight ${currentTheme === THEMES.GALAXY ? 'text-[#e8eaf6]' : 'text-[#1a1a1a]'}`} animate={{ y: [0, -1, 0] }} transition={{ repeat: Infinity, repeatType: "mirror", duration: 2, ease: "easeInOut" }}> puffnotes </motion.span> <span className={currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3]' : 'text-gray-400'}>|</span> <span className={`font-serif text-sm max-w-[150px] sm:max-w-xs truncate ${currentTheme === THEMES.GALAXY ? 'text-[#b8bfde]' : 'text-gray-500'}`} title={noteName || "untitled"}> {noteName || "untitled"} </span> </motion.div> </motion.div> )} </AnimatePresence>
 
@@ -214,14 +363,38 @@ export default function OfflineApp({ onGoToLanding }) {
               <motion.h1 className={`font-serif text-2xl tracking-tight flex-shrink-0 ${currentTheme === THEMES.GALAXY ? 'text-[#e8eaf6]' : 'text-[#1a1a1a]'}`} whileHover={!focusMode ? { x: 2 } : {}}> puffnotes </motion.h1>
               <div className="flex-1 flex justify-center items-center gap-2 mx-4 min-w-0">
                  <motion.input type="text" value={noteName} onChange={(e) => setNoteName(e.target.value)} className={`text-center font-serif text-sm bg-transparent outline-none w-full max-w-[70%] border-b border-transparent transition-opacity duration-300 ${focusMode || isPreviewMode ? 'opacity-0 pointer-events-none' : 'opacity-100'} ${currentTheme === THEMES.GALAXY ? 'text-[#b8bfde] focus:border-[#9b59b6]' : 'text-gray-500 focus:border-gray-300'}`} placeholder="note name..." whileFocus={{ scale: 1.02 }} disabled={focusMode || isPreviewMode} />
-                 {!showBeautifyControls && !focusMode && note.trim() && (
+                 {!isCanvasMode && !showBeautifyControls && !focusMode && note.trim() && (
                      <motion.button onClick={togglePreviewMode} title={isPreviewMode ? "Edit Note" : "Preview Markdown"} className={`opacity-60 hover:opacity-100 transition p-1 flex-shrink-0 ${currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3] hover:text-[#e8eaf6]' : 'text-gray-500 hover:text-gray-800'}`} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
                          {isPreviewMode ? <Pen size={18} /> : <Eye size={18} />}
                      </motion.button>
                   )}
               </div>
               <div className={`flex space-x-4 text-lg flex-shrink-0 ${currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3]' : 'text-gray-600'}`}>
-                <motion.button title="Export as PDF" onClick={handleExportPdf} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }} className={`p-1 disabled:opacity-30 ${currentTheme === THEMES.GALAXY ? 'hover:text-[#e8eaf6]' : 'hover:text-gray-900'}`} disabled={!(showBeautifyControls ? previewNote : note).trim() || isExportingPdf}>
+                <motion.button title={isCanvasMode ? "Switch to text editor" : "Switch to handwriting canvas"} onClick={() => {
+                  const ok = isCanvasMode || !note.trim() || confirm('Switching to canvas mode will not convert your existing text into a drawing. Continue?');
+                  if (!ok) return;
+                  const next = !isCanvasMode;
+                  setIsCanvasMode(next);
+                  localStorage.setItem(CANVAS_MODE_STORAGE_KEY, String(next));
+                  setCanvasEraser(false);
+                  setCanvasDirty(false);
+                  setIsPreviewMode(false);
+                }} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }} className={`p-1 ${currentTheme === THEMES.GALAXY ? 'hover:text-[#e8eaf6]' : 'hover:text-gray-900'}`}>
+                  <Paintbrush size={18} />
+                </motion.button>
+
+                {isCanvasMode && (
+                  <>
+                    <motion.button title={canvasEraser ? "Pen" : "Eraser"} onClick={() => setCanvasEraser(p => !p)} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }} className={`p-1 ${canvasEraser ? (currentTheme === THEMES.GALAXY ? 'text-[#f39c12]' : 'text-orange-400') : ''}`}>
+                      <Eraser size={18} />
+                    </motion.button>
+                    <motion.button title="Clear canvas" onClick={() => { const ok = confirm('Clear the canvas? This cannot be undone.'); if (!ok) return; canvasRef.current?.__puff_clear?.(); }} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }} className={`p-1 ${currentTheme === THEMES.GALAXY ? 'hover:text-red-300' : 'hover:text-red-500'}`}>
+                      <Trash2 size={18} />
+                    </motion.button>
+                  </>
+                )}
+
+                <motion.button title="Export as PDF" onClick={handleExportPdf} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }} className={`p-1 disabled:opacity-30 ${currentTheme === THEMES.GALAXY ? 'hover:text-[#e8eaf6]' : 'hover:text-gray-900'}`} disabled={(isCanvasMode ? false : !(showBeautifyControls ? previewNote : note).trim()) || isExportingPdf}>
                   {isExportingPdf ? (
                     <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}>
                       <RotateCw size={18} className={currentTheme === THEMES.GALAXY ? "text-[#8b9dc3]" : "text-gray-400"} />
@@ -242,7 +415,18 @@ export default function OfflineApp({ onGoToLanding }) {
             </motion.div>
             <motion.hr className={`mb-4 flex-shrink-0 ${currentTheme === THEMES.GALAXY ? 'border-[#2d3561]' : 'border-gray-200'}`} animate={{ opacity: focusMode ? 0.2 : 1 }} />
             <div className="flex-1 overflow-y-auto relative" >
-               {isPreviewMode && !showBeautifyControls ? (
+               {isCanvasMode ? (
+                 <div className="w-full h-full">
+                   <CanvasEditor
+                     canvasElRef={canvasRef}
+                     brushColor={canvasBrushColor}
+                     brushSize={canvasBrushSize}
+                     eraser={canvasEraser}
+                     onDirtyChange={setCanvasDirty}
+                     className={currentTheme === THEMES.GALAXY ? 'bg-[#0d1235]' : 'bg-[#fdfbf7]'}
+                   />
+                 </div>
+               ) : isPreviewMode && !showBeautifyControls ? (
                   <MarkdownPreview markdownText={note} theme={currentTheme} />
                ) : (
                   <textarea value={showBeautifyControls ? previewNote : note} onChange={(e) => { const val = e.target.value; if (!showBeautifyControls) { setNote(val); } }} placeholder="A quiet place to write..." className={`w-full h-full font-mono text-sm bg-transparent resize-none outline-none leading-relaxed placeholder:italic transition-all duration-300 ${focusMode ? 'text-base px-2' : 'text-sm'} [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${currentTheme === THEMES.GALAXY ? 'text-[#e8eaf6] placeholder:text-[#6c7b95]' : 'text-gray-800 placeholder:text-gray-400'}`} readOnly={isBeautifying || showBeautifyControls} />
