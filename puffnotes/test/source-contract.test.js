@@ -64,6 +64,8 @@ test('PDF export retains its page, render, and error contracts', async () => {
     'const headerTopMargin = 15',
     'scale: 3',
     'imageTimeout: 15000',
+    'findWhitespacePageBreak({',
+    'minimumBlankRows: 6',
     "pdf.addImage(",
     "'FAST'",
     "pdf.save(filename)",

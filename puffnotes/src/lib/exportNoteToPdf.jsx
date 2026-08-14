@@ -3,7 +3,14 @@ import jsPDF from 'jspdf';
 import * as ReactDOM from 'react-dom/client';
 
 import MarkdownPreview from '../components/MarkdownPreview';
+import { findWhitespacePageBreak, isInkFreeRow } from './pdfPagination.js';
 import { THEMES } from './themeManager';
+
+const parseRgbColor = (color) => {
+  const channels = color.match(/[\d.]+/g)?.map(Number);
+  if (!channels || channels.length < 3 || channels[3] === 0) return null;
+  return { red: channels[0], green: channels[1], blue: channels[2] };
+};
 
 export async function exportNoteToPdf({
   contentToExport,
@@ -99,6 +106,11 @@ export async function exportNoteToPdf({
     console.warn('Error applying style overrides:', error);
   }
 
+  const foregroundColors = [...new Set(
+    [tempContainer, ...tempContainer.querySelectorAll('*')]
+      .map((element) => getComputedStyle(element).color),
+  )].map(parseRgbColor).filter(Boolean);
+
   try {
     const canvas = await html2canvas(tempContainer, {
       scale: 3,
@@ -120,6 +132,28 @@ export async function exportNoteToPdf({
     const canvasHeightPX = canvas.height;
     const scaleFactor = contentWidthMM / canvasWidthPX;
     const pixelsPerPage = contentHeightMM / scaleFactor;
+    const sourceContext = canvas.getContext('2d', { willReadFrequently: true });
+
+    const findPageEnd = (pageStartY) => {
+      const idealEndY = Math.min(canvasHeightPX, Math.floor(pageStartY + pixelsPerPage));
+      if (idealEndY >= canvasHeightPX) return canvasHeightPX;
+
+      const minimumEndY = Math.floor(pageStartY + pixelsPerPage * 0.7);
+      const scanHeight = idealEndY - minimumEndY;
+      const scan = sourceContext.getImageData(0, minimumEndY, canvasWidthPX, scanHeight);
+
+      return findWhitespacePageBreak({
+        idealEndY,
+        minimumEndY,
+        minimumBlankRows: 6,
+        isBlankRow: (absoluteRow) => isInkFreeRow({
+          data: scan.data,
+          foregroundColors,
+          row: absoluteRow - minimumEndY,
+          width: canvasWidthPX,
+        }),
+      });
+    };
 
     const addPageStyling = () => {
       pdf.setFillColor(pageBackgroundColor);
@@ -135,10 +169,10 @@ export async function exportNoteToPdf({
     };
 
     addPageStyling();
-    let remainingHeight = canvasHeightPX;
     let currentY = 0;
-    while (remainingHeight > 0) {
-      const heightToUse = Math.min(remainingHeight, pixelsPerPage);
+    while (currentY < canvasHeightPX) {
+      const pageEndY = findPageEnd(currentY);
+      const heightToUse = pageEndY - currentY;
       const tempCanvas = document.createElement('canvas');
       tempCanvas.width = canvasWidthPX;
       tempCanvas.height = heightToUse;
@@ -165,9 +199,8 @@ export async function exportNoteToPdf({
         undefined,
         'FAST',
       );
-      currentY += heightToUse;
-      remainingHeight -= heightToUse;
-      if (remainingHeight > 0) {
+      currentY = pageEndY;
+      if (currentY < canvasHeightPX) {
         pdf.addPage();
         addPageStyling();
       }
