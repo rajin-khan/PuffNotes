@@ -6,14 +6,16 @@ import {
   Keyboard, LogOut, AlertTriangle, Loader2, Home, HelpCircle, Settings
 } from 'lucide-react';
 import { runBeautifyWorkflow } from '../lib/beautifyWorkflow';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import MarkdownPreview from './MarkdownPreview';
 import { exportNoteToPdf } from '../lib/exportNoteToPdf';
 import KeyboardShortcutsModal from './KeyboardShortcutsModal';
 import OnboardingModal from './OnboardingModal';
 import ThemeSwitcher from './ThemeSwitcher';
 import SettingsModal from './SettingsModal';
-import { THEMES, getStoredTheme, setStoredTheme, getThemeVideos } from '../lib/themeManager';
+import { ModalPresence } from './ModalMotion';
+import ThemeBackground from './ThemeBackground';
+import { THEMES, getStoredTheme, setStoredTheme } from '../lib/themeManager';
 import { listNotes, getNoteContent, saveNoteContent } from '../lib/googleDrive';
 
 const USER_API_KEY_STORAGE_KEY = 'puffnotes_groqUserApiKey_v1';
@@ -57,9 +59,11 @@ const onlineOnboardingSteps = [
 ];
 
 export default function OnlineApp({ user: _user, accessToken, folderId, onSignOut, onGoToLanding }) {
-  const [showOnboarding, setShowOnboarding] = useState(
-    () => !localStorage.getItem('puffnotes_onboarding_online_complete')
-  );
+  const shouldReduceMotion = useReducedMotion();
+  const shouldShowOnboardingOnEntry = useRef(
+    !localStorage.getItem('puffnotes_onboarding_online_complete')
+  ).current;
+  const [showOnboarding, setShowOnboarding] = useState(false);
   
   const [currentTheme, setCurrentTheme] = useState(() => 
     getStoredTheme() || THEMES.WARM
@@ -90,7 +94,17 @@ export default function OnlineApp({ user: _user, accessToken, folderId, onSignOu
   const [isLoadingNote, setIsLoadingNote] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const noteContentRef = useRef(note);
-  const videoRef = useRef(null);
+  const hasCoveringModal = showSettingsModal || showShortcutsModal || showOnboarding || showFileModal;
+
+  useEffect(() => {
+    if (!shouldShowOnboardingOnEntry) return undefined;
+
+    const onboardingTimer = window.setTimeout(
+      () => setShowOnboarding(true),
+      shouldReduceMotion ? 0 : 720,
+    );
+    return () => window.clearTimeout(onboardingTimer);
+  }, [shouldReduceMotion, shouldShowOnboardingOnEntry]);
   
   const handleFinishOnboarding = () => {
     localStorage.setItem('puffnotes_onboarding_online_complete', 'true');
@@ -107,13 +121,6 @@ export default function OnlineApp({ user: _user, accessToken, folderId, onSignOu
   };
   
   useEffect(() => { noteContentRef.current = note; }, [note]);
-  useEffect(() => { 
-    if (videoRef.current) { 
-      videoRef.current.play().catch(error => { 
-        console.warn("Video autoplay was prevented by the browser:", error); 
-      }); 
-    } 
-  }, [currentTheme]); // Re-trigger when theme changes
   const refreshFileList = async () => { try { const files = await listNotes(accessToken, folderId); setFileList(files || []); return files; } catch (err) { console.error("Failed to refresh file list:", err); setFileList([]); return []; } };
   const handleOpenFile = async (file) => { if (!file || isLoadingNote) return; setIsLoadingNote(true); setShowFileModal(false); try { const content = await getNoteContent(accessToken, file.id); const baseName = file.name.replace(/\.md$/, ""); setNote(content); noteContentRef.current = content; setNoteName(baseName); setActiveNoteId(file.id); setPreviewNote(""); setShowBeautifyControls(false); setOriginalNote(""); setIsPreviewMode(false); setSaveStatus('saved'); } catch (err) { console.error("Error opening file:", err); alert(`Failed to open file: ${file.name}. Error: ${err.message}`); } finally { setIsLoadingNote(false); } };
   const handleNewNote = () => { if (saveStatus === 'saving') return; setNote(""); noteContentRef.current = ""; setNoteName("untitled"); setActiveNoteId(null); setPreviewNote(""); setShowBeautifyControls(false); setOriginalNote(""); setIsPreviewMode(false); setSaveStatus('unsaved'); };
@@ -145,8 +152,21 @@ export default function OnlineApp({ user: _user, accessToken, folderId, onSignOu
       <AnimatePresence>
         {showOnboarding && <OnboardingModal steps={onlineOnboardingSteps} onFinish={handleFinishOnboarding} theme={currentTheme} />}
       </AnimatePresence>
-      <div data-puffnotes-theme={currentTheme} className={`min-h-screen ${currentTheme === THEMES.GALAXY ? 'bg-[#0a0e27]' : 'bg-[#fdf6ec]'} relative overflow-hidden transition-all duration-300 ${showOnboarding ? 'blur-sm scale-105' : 'blur-0 scale-100'}`}>
-        <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-50 flex items-center space-x-2">
+      <motion.div
+        data-app-stage="editor"
+        data-puffnotes-theme={currentTheme}
+        className={`min-h-screen ${currentTheme === THEMES.GALAXY ? 'bg-[#0a0e27]' : 'bg-[#fdf6ec]'} relative overflow-hidden transition-all duration-300 ${hasCoveringModal ? `blur-sm ${shouldReduceMotion ? '' : 'scale-105'}` : 'blur-0 scale-100'}`}
+        initial={shouldReduceMotion ? false : { opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: shouldReduceMotion ? 0 : 0.42, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <motion.div
+          data-app-controls="utility"
+          className="absolute top-3 left-3 sm:top-4 sm:left-4 z-50 flex items-center space-x-2"
+          initial={shouldReduceMotion ? false : { opacity: 0 }}
+          animate={{ opacity: 1, transition: { duration: shouldReduceMotion ? 0 : 0.35, delay: shouldReduceMotion ? 0 : 0.18 } }}
+        >
             <motion.button onClick={onGoToLanding} className="opacity-70 hover:opacity-90 transition p-1 rounded-full border border-gray-300 shadow-sm" title="Back to Home" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
                 <Home size={17} strokeWidth={2} className="text-gray-200" />
             </motion.button>
@@ -157,29 +177,23 @@ export default function OnlineApp({ user: _user, accessToken, folderId, onSignOu
             <motion.button onClick={onSignOut} className="opacity-70 hover:opacity-90 transition p-1 rounded-full border border-gray-300 shadow-sm" title="Sign Out" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
                 <LogOut size={17} strokeWidth={2} className="text-gray-200" />
             </motion.button>
-        </div>
+        </motion.div>
 
-        <video 
-          ref={videoRef}
-          key={currentTheme} 
-          autoPlay 
-          muted 
-          loop 
-          playsInline 
-          preload="auto" 
-          className="fixed top-0 left-0 w-full h-full object-cover z-[10] pointer-events-none"
-        >
-          {getThemeVideos(currentTheme).map((video, index) => (
-            <source key={index} src={video.src} type={video.type} />
-          ))}
-          Your browser does not support the video tag.
-        </video>
-
+        <ThemeBackground
+          theme={currentTheme}
+          paused={hasCoveringModal}
+          className="fixed inset-0 z-[10]"
+        />
         {/* Theme Switcher - Fixed positioned on left and right edges */}
         <ThemeSwitcher currentTheme={currentTheme} onThemeChange={handleThemeChange} />
 
         {/* --- THE FIX: The Help Button is now here, on the main background div --- */}
-        <div className="absolute bottom-4 left-4 z-50">
+        <motion.div
+          data-app-controls="help"
+          className="absolute bottom-4 left-4 z-50"
+          initial={shouldReduceMotion ? false : { opacity: 0 }}
+          animate={{ opacity: 1, transition: { duration: shouldReduceMotion ? 0 : 0.35, delay: shouldReduceMotion ? 0 : 0.26 } }}
+        >
             <motion.button
                 title="How does it work?"
                 onClick={handleShowOnboarding}
@@ -189,10 +203,15 @@ export default function OnlineApp({ user: _user, accessToken, folderId, onSignOu
             >
                 <HelpCircle size={20} strokeWidth={2} className="text-gray-200" />
             </motion.button>
-        </div>
+        </motion.div>
 
-        <div className="absolute top-3 right-3 sm:top-4 sm:right-6 z-50 flex items-center space-x-2 sm:space-x-3">
-            <div className={`flex items-center space-x-2 sm:space-x-3 px-3 sm:px-4 py-2 rounded-full shadow-md border ${currentTheme === THEMES.GALAXY ? 'border-[#4a5178] bg-[#0f1642]/80' : 'border-[#d4c4a8] bg-white/30'}`}>
+        <motion.div
+          data-app-controls="toolbar"
+          className="absolute top-3 right-3 sm:top-4 sm:right-6 z-50 flex items-center space-x-2 sm:space-x-3"
+          initial={shouldReduceMotion ? false : { opacity: 0 }}
+          animate={{ opacity: 1, transition: { duration: shouldReduceMotion ? 0 : 0.35, delay: shouldReduceMotion ? 0 : 0.22 } }}
+        >
+            <div className={`flex items-center space-x-2 sm:space-x-3 px-3 sm:px-4 py-2 rounded-full shadow-md border transition-colors duration-500 ${currentTheme === THEMES.GALAXY ? 'border-[#4a5178] bg-[#0f1642]/80' : 'border-[#d4c4a8] bg-white/30'} ${currentTheme === THEMES.KOMOREBI ? 'komorebi-toolbar' : ''}`}>
                 <button onClick={toggleFocusMode} className={`opacity-60 hover:opacity-100 transition ${focusMode ? (currentTheme === THEMES.GALAXY ? 'text-[#f39c12]' : 'text-orange-200') : (currentTheme === THEMES.GALAXY ? 'text-[#b8bfde]' : 'text-gray-600')}`} title={focusMode ? "Exit Focus Mode" : "Focus Mode"}> <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"> <circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="4" /> </svg> </button>
                 <motion.button onClick={() => setShowFileModal(p => !p)} className={`opacity-60 hover:opacity-100 transition ${currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3]' : 'text-gray-400'}`} title="Open Notes Folder" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}> <FolderOpen size={20} /> </motion.button>
                  <div title={saveStatus === 'saved' ? 'All changes saved' : (saveStatus === 'saving' ? 'Saving...' : 'Unsaved changes')} className="flex items-center">
@@ -220,14 +239,38 @@ export default function OnlineApp({ user: _user, accessToken, folderId, onSignOu
               onSaveApiKey={handleSaveUserApiKey}
               theme={currentTheme}
             />
-        </div>
+        </motion.div>
         
-        <AnimatePresence> {showFileModal && ( <motion.div className="fixed inset-0 z-30 bg-black bg-opacity-30 flex items-center justify-center p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} onClick={() => setShowFileModal(false)}> <motion.div className={`rounded-xl shadow-xl w-full max-w-xs max-h-[60vh] overflow-y-auto p-4 ${currentTheme === THEMES.GALAXY ? 'bg-[#0f1642] border border-[#2d3561]' : 'bg-white border border-[#e6ddcc]'}`} initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} transition={{ type: "spring", duration: 0.4 }} onClick={e => e.stopPropagation()}> <div className="flex justify-between items-center mb-3"> <h2 className={`font-serif text-lg ${currentTheme === THEMES.GALAXY ? 'text-[#e8eaf6]' : 'text-gray-800'}`}>Your Notes</h2> <motion.button onClick={() => setShowFileModal(false)} className={`${currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3] hover:text-[#e8eaf6]' : 'text-gray-500 hover:text-gray-800'}`} title="Close" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}> <X size={18} /> </motion.button> </div> {fileList.length === 0 ? ( <p className={`text-sm italic px-2 py-1 ${currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3]' : 'text-gray-500'}`}>No notes found in your Google Drive's "puffnotes" folder.</p> ) : ( <div className="space-y-1"> {fileList.map((file, index) => ( <motion.button key={file.id} onClick={() => handleOpenFile(file)} className={`block w-full text-left text-sm font-mono px-2 py-1.5 rounded transition-colors duration-100 ${activeNoteId === file.id ? (currentTheme === THEMES.GALAXY ? 'text-[#f39c12]' : 'text-orange-400') : (currentTheme === THEMES.GALAXY ? 'text-[#e8eaf6] hover:bg-[#2d3561]' : 'text-[#333] hover:bg-[#f8f6f2]')}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.03 }} whileHover={{ x: 3 }} title={`Open ${file.name}`}> {file.name.replace(/\.md$/, "")} </motion.button> ))} </div> )} </motion.div> </motion.div> )} </AnimatePresence>
+        <ModalPresence
+          isOpen={showFileModal}
+          kind="notes"
+          theme={currentTheme}
+          onBackdropClick={() => setShowFileModal(false)}
+          panelClassName={`rounded-xl shadow-xl w-full max-w-xs max-h-[60vh] overflow-y-auto p-4 ${currentTheme === THEMES.GALAXY ? 'bg-[#0f1642] border border-[#2d3561]' : 'bg-white border border-[#e6ddcc]'}`}
+        >
+          <div className="flex justify-between items-center mb-3">
+            <h2 className={`font-serif text-lg ${currentTheme === THEMES.GALAXY ? 'text-[#e8eaf6]' : 'text-gray-800'}`}>Your Notes</h2>
+            <motion.button onClick={() => setShowFileModal(false)} className={`${currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3] hover:text-[#e8eaf6]' : 'text-gray-500 hover:text-gray-800'}`} title="Close" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+              <X size={18} />
+            </motion.button>
+          </div>
+          {fileList.length === 0 ? (
+            <p className={`text-sm italic px-2 py-1 ${currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3]' : 'text-gray-500'}`}>No notes found in your Google Drive's "puffnotes" folder.</p>
+          ) : (
+            <div className="space-y-1">
+              {fileList.map((file, index) => (
+                <motion.button key={file.id} onClick={() => handleOpenFile(file)} className={`block w-full text-left text-sm font-mono px-2 py-1.5 rounded transition-colors duration-100 ${activeNoteId === file.id ? (currentTheme === THEMES.GALAXY ? 'text-[#f39c12]' : 'text-orange-400') : (currentTheme === THEMES.GALAXY ? 'text-[#e8eaf6] hover:bg-[#2d3561]' : 'text-[#333] hover:bg-[#f8f6f2]')}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.03 }} whileHover={{ x: 3 }} title={`Open ${file.name}`}>
+                  {file.name.replace(/\.md$/, "")}
+                </motion.button>
+              ))}
+            </div>
+          )}
+        </ModalPresence>
 
-        <AnimatePresence> {!isEditorVisible && dropAnimationComplete && ( <motion.div className="fixed bottom-0 left-0 right-0 z-10 flex justify-center" initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: "spring", stiffness: 400, damping: 40, mass: 1 }}> <motion.div className={`relative after:content-[''] after:absolute after:top-full after:left-0 after:right-0 after:h-1 after:bg-inherit border-t rounded-t-2xl shadow-2xl px-6 py-3 flex items-center space-x-3 cursor-pointer ${currentTheme === THEMES.GALAXY ? 'bg-[#0f1642] border-[#2d3561]' : 'bg-white border-[#e6ddcc]'}`} onClick={() => { setDropAnimationComplete(false); setIsEditorVisible(true); }} whileHover={{ y: -2, boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)" }} whileTap={{ scale: 0.98 }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ delay: 0.1 }}> <motion.span className={`font-serif text-lg tracking-tight ${currentTheme === THEMES.GALAXY ? 'text-[#e8eaf6]' : 'text-[#1a1a1a]'}`} animate={{ y: [0, -1, 0] }} transition={{ repeat: Infinity, repeatType: "mirror", duration: 2, ease: "easeInOut" }}> puffnotes </motion.span> <span className={currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3]' : 'text-gray-400'}>|</span> <span className={`font-serif text-sm max-w-[150px] sm:max-w-xs truncate ${currentTheme === THEMES.GALAXY ? 'text-[#b8bfde]' : 'text-gray-500'}`} title={noteName || "untitled"}> {noteName || "untitled"} </span> </motion.div> </motion.div> )} </AnimatePresence>
+        <AnimatePresence> {!isEditorVisible && dropAnimationComplete && ( <motion.div className="fixed bottom-0 left-0 right-0 z-10 flex justify-center" initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: "spring", stiffness: 400, damping: 40, mass: 1 }}> <motion.div className={`relative after:content-[''] after:absolute after:top-full after:left-0 after:right-0 after:h-1 after:bg-inherit border-t rounded-t-2xl shadow-2xl px-6 py-3 flex items-center space-x-3 cursor-pointer ${currentTheme === THEMES.GALAXY ? 'bg-[#0f1642] border-[#2d3561]' : 'bg-white border-[#e6ddcc]'} ${currentTheme === THEMES.KOMOREBI ? 'komorebi-editor-tab' : ''}`} onClick={() => { setDropAnimationComplete(false); setIsEditorVisible(true); }} whileHover={{ y: -2, boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)" }} whileTap={{ scale: 0.98 }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ delay: 0.1 }}> <motion.span className={`font-serif text-lg tracking-tight ${currentTheme === THEMES.GALAXY ? 'text-[#e8eaf6]' : 'text-[#1a1a1a]'}`} animate={{ y: [0, -1, 0] }} transition={{ repeat: Infinity, repeatType: "mirror", duration: 2, ease: "easeInOut" }}> puffnotes </motion.span> <span className={currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3]' : 'text-gray-400'}>|</span> <span className={`font-serif text-sm max-w-[150px] sm:max-w-xs truncate ${currentTheme === THEMES.GALAXY ? 'text-[#b8bfde]' : 'text-gray-500'}`} title={noteName || "untitled"}> {noteName || "untitled"} </span> </motion.div> </motion.div> )} </AnimatePresence>
 
-        <motion.div className="fixed bottom-0 left-0 right-0 z-20" initial={false} animate={{ y: isEditorVisible ? 0 : '101%' }} transition={{ type: "spring", stiffness: 300, damping: 35, mass: 0.8 }} onAnimationComplete={() => setDropAnimationComplete(true)}>
-          <div className={`rounded-t-2xl shadow-2xl max-w-full sm:max-w-3xl mx-auto p-4 sm:p-6 h-[88vh] sm:h-[90vh] flex flex-col relative transition-colors duration-500 ${focusMode ? (currentTheme === THEMES.GALAXY ? 'bg-[#0d1235]' : 'bg-[#fdfbf7]') : (currentTheme === THEMES.GALAXY ? 'bg-[#0f1642]' : 'bg-white')}`}>
+        <motion.div data-note-page-stage className="fixed bottom-0 left-0 right-0 z-20" initial={shouldReduceMotion ? false : { y: '100%' }} animate={{ y: isEditorVisible ? 0 : '101%' }} transition={shouldReduceMotion ? { duration: 0 } : { type: "spring", stiffness: 300, damping: 35, mass: 0.8 }} onAnimationComplete={() => setDropAnimationComplete(true)}>
+          <div data-note-page className={`rounded-t-2xl shadow-2xl max-w-full sm:max-w-3xl mx-auto p-4 sm:p-6 h-[88vh] sm:h-[90vh] flex flex-col relative transition-colors duration-500 ${focusMode ? (currentTheme === THEMES.GALAXY ? 'bg-[#0d1235]/95' : 'bg-[#fdfbf7]/95') : (currentTheme === THEMES.GALAXY ? 'bg-[#0f1642]/95' : 'bg-white/95')} ${currentTheme === THEMES.KOMOREBI ? `komorebi-editor-surface ${focusMode ? 'komorebi-editor-focus' : ''}` : ''}`}>
              <motion.div className="flex justify-between items-center mb-3 sm:mb-4 flex-shrink-0" animate={{ opacity: focusMode ? 0.3 : 1 }} transition={{ duration: 0.5 }} style={{ pointerEvents: focusMode ? 'none' : 'auto' }}>
               <motion.h1 className={`font-serif text-xl sm:text-2xl tracking-tight flex-shrink-0 ${currentTheme === THEMES.GALAXY ? 'text-[#e8eaf6]' : 'text-[#1a1a1a]'}`} whileHover={!focusMode ? { x: 2 } : {}}> puffnotes </motion.h1>
               <div className="flex-1 flex justify-center items-center gap-2 mx-2 sm:mx-4 min-w-0">
@@ -292,7 +335,7 @@ export default function OnlineApp({ user: _user, accessToken, folderId, onSignOu
              </AnimatePresence>
           </div>
         </motion.div>
-      </div>
+      </motion.div>
     </>
   );
 }

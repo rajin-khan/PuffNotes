@@ -1,8 +1,11 @@
 // Theme management utilities for PuffNotes
 export const THEMES = {
   WARM: 'warm',
-  GALAXY: 'galaxy'
+  GALAXY: 'galaxy',
+  KOMOREBI: 'komorebi'
 };
+
+export const THEME_ORDER = [THEMES.WARM, THEMES.GALAXY, THEMES.KOMOREBI];
 
 const THEME_STORAGE_KEY = 'puffnotes_theme_v1';
 
@@ -94,6 +97,32 @@ export const getThemeColors = (theme) => {
       },
       shadow: 'rgba(10, 14, 39, 0.4)',
       glow: 'rgba(155, 89, 182, 0.3)'
+    },
+    [THEMES.KOMOREBI]: {
+      background: {
+        main: '#071c20',
+        panel: '#352820',
+        focus: '#3b2d24',
+        modal: '#30241d'
+      },
+      text: {
+        primary: '#f4ebd7',
+        secondary: '#dfd2b9',
+        muted: '#b8aa90',
+        placeholder: '#ad9d84'
+      },
+      border: {
+        primary: '#685541',
+        secondary: '#514233',
+        focus: '#e7bd87'
+      },
+      accent: {
+        primary: '#b7cd9b',
+        secondary: '#bd734d',
+        hover: '#4a392d'
+      },
+      shadow: 'rgba(7, 28, 32, 0.26)',
+      glow: 'rgba(231, 189, 135, 0.24)'
     }
   };
 
@@ -114,6 +143,10 @@ export const getThemeVideos = (theme) => {
     [THEMES.GALAXY]: [
       { src: '/galaxy.webm', type: 'video/webm' },
       { src: '/galaxy.mp4', type: 'video/mp4' }
+    ],
+    [THEMES.KOMOREBI]: [
+      { src: '/komorebi.mp4', type: 'video/mp4' },
+      { src: '/komorebi.webm', type: 'video/webm' }
     ]
   };
 
@@ -146,10 +179,10 @@ export const getThemeVideoType = (theme) => {
  * @returns {string} Next theme
  */
 export const getNextTheme = (currentTheme) => {
-  const themeOrder = [THEMES.WARM, THEMES.GALAXY];
-  const currentIndex = themeOrder.indexOf(currentTheme);
-  const nextIndex = (currentIndex + 1) % themeOrder.length;
-  return themeOrder[nextIndex];
+  const currentIndex = THEME_ORDER.indexOf(currentTheme);
+  if (currentIndex === -1) return THEMES.WARM;
+  const nextIndex = (currentIndex + 1) % THEME_ORDER.length;
+  return THEME_ORDER[nextIndex];
 };
 
 /**
@@ -158,10 +191,10 @@ export const getNextTheme = (currentTheme) => {
  * @returns {string} Previous theme
  */
 export const getPreviousTheme = (currentTheme) => {
-  const themeOrder = [THEMES.WARM, THEMES.GALAXY];
-  const currentIndex = themeOrder.indexOf(currentTheme);
-  const prevIndex = currentIndex === 0 ? themeOrder.length - 1 : currentIndex - 1;
-  return themeOrder[prevIndex];
+  const currentIndex = THEME_ORDER.indexOf(currentTheme);
+  if (currentIndex === -1) return THEMES.WARM;
+  const prevIndex = currentIndex === 0 ? THEME_ORDER.length - 1 : currentIndex - 1;
+  return THEME_ORDER[prevIndex];
 };
 
 /**

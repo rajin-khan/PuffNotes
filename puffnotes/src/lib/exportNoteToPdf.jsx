@@ -23,8 +23,10 @@ export async function exportNoteToPdf({
   setIsExportingPdf(true);
 
   const filename = (noteName.trim() || 'untitled') + '.pdf';
-  const pageBackgroundColor = currentTheme === THEMES.GALAXY ? '#0a0e27' : '#fdfbf7';
-  const headerTextColor = currentTheme === THEMES.GALAXY ? '#6c7b95' : '#a8a29a';
+  const isGalaxyTheme = currentTheme === THEMES.GALAXY;
+  const isKomorebiTheme = currentTheme === THEMES.KOMOREBI;
+  const pageBackgroundColor = isGalaxyTheme ? '#0a0e27' : isKomorebiTheme ? '#352820' : '#fdfbf7';
+  const headerTextColor = isGalaxyTheme ? '#6c7b95' : isKomorebiTheme ? '#b8aa90' : '#a8a29a';
   const headerText = 'puffnotes';
   const headerFontSize = 9;
   const margin = 18;
@@ -62,16 +64,17 @@ export async function exportNoteToPdf({
   tempContainer.style.fontFamily = 'monospace';
   tempContainer.style.fontSize = '14px';
   tempContainer.style.lineHeight = '1.625';
-  tempContainer.style.color = currentTheme === THEMES.GALAXY ? '#e8eaf6' : '#1f2937';
+  tempContainer.style.color = isGalaxyTheme ? '#e8eaf6' : isKomorebiTheme ? '#f4ebd7' : '#1f2937';
   tempContainer.style.height = 'auto';
   tempContainer.style.display = 'inline-block';
+  tempContainer.dataset.puffnotesTheme = currentTheme;
 
   const root = ReactDOM.createRoot(tempContainer);
   root.render(<MarkdownPreview markdownText={contentToExport} theme={currentTheme} />);
   await new Promise((resolve) => setTimeout(resolve, 500));
 
   try {
-    const selectorsAndColors = currentTheme === THEMES.GALAXY ? [
+    const selectorsAndColors = isGalaxyTheme ? [
       { selector: '.text-\\[\\#e8eaf6\\]', color: '#e8eaf6' },
       { selector: '.text-\\[\\#b8bfde\\]', color: '#b8bfde' },
       { selector: 'blockquote', color: '#b8bfde' },
@@ -79,6 +82,23 @@ export async function exportNoteToPdf({
       { selector: '.bg-\\[\\#2d3561\\]', color: '#2d3561', styleProp: 'backgroundColor' },
       { selector: '.text-\\[\\#9b59b6\\]', color: '#9b59b6' },
       { selector: '.bg-\\[\\#0d1235\\]', color: '#0d1235', styleProp: 'backgroundColor' },
+    ] : isKomorebiTheme ? [
+      { selector: '.text-\\[\\#f4ebd7\\]', color: '#f4ebd7' },
+      { selector: 'blockquote', color: '#b8aa90' },
+      { selector: 'blockquote', color: '#685541', styleProp: 'borderColor' },
+      { selector: 'a', color: '#b7cd9b' },
+      { selector: 'code:not(pre > code)', color: '#b7cd9b' },
+      { selector: 'code:not(pre > code)', color: '#44342a', styleProp: 'backgroundColor' },
+      { selector: 'code:not(pre > code)', color: '#685541', styleProp: 'borderColor' },
+      { selector: 'pre', color: '#f4ebd7' },
+      { selector: 'pre', color: '#281e18', styleProp: 'backgroundColor' },
+      { selector: 'pre', color: '#514233', styleProp: 'borderColor' },
+      { selector: 'hr', color: '#514233', styleProp: 'borderColor' },
+      { selector: 'th', color: '#f4ebd7' },
+      { selector: 'th', color: '#44342a', styleProp: 'backgroundColor' },
+      { selector: 'th', color: '#685541', styleProp: 'borderColor' },
+      { selector: 'td', color: '#dfd2b9' },
+      { selector: 'td', color: '#685541', styleProp: 'borderColor' },
     ] : [
       { selector: '.text-gray-800', color: '#1f2937' },
       { selector: '.text-gray-600', color: '#4b5563' },

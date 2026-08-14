@@ -1,7 +1,9 @@
 // src/components/LandingPage.jsx
-import { useState, useRef, useEffect } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { useState } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Wifi, FolderLock, ArrowRight, ArrowLeft, Cloud, MonitorSmartphone, ShieldCheck, FileText } from 'lucide-react';
+import { getStoredTheme } from '../lib/themeManager';
+import ThemeBackground from './ThemeBackground';
 
 // Animation variants
 const itemVariants = {
@@ -18,45 +20,33 @@ const containerVariants = {
 
 
 export default function LandingPage({ onStartOffline, onStartOnline, isOnlineLoading }) {
+  const shouldReduceMotion = useReducedMotion();
   const [showInfo, setShowInfo] = useState(false);
-  const videoRef = useRef(null);
-
-  useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.play().catch(error => {
-        console.warn("Video autoplay was prevented by the browser:", error);
-      });
-    }
-  }, []);
+  const [homeTheme] = useState(() => getStoredTheme());
 
   // --- NEW: Your simple, editable message ---
   const devMessage = "- Themes have landed! Request newer ones";
 
   return (
     <motion.div
+      data-puffnotes-theme={homeTheme}
+      data-landing-theme={homeTheme}
+      data-app-stage="landing"
       className="fixed inset-0 z-[100] flex min-h-screen w-screen items-center justify-center overflow-y-auto bg-black p-4"
-      initial={{ opacity: 0 }}
+      initial={shouldReduceMotion ? false : { opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
+      transition={{ duration: shouldReduceMotion ? 0 : 0.42, ease: [0.22, 1, 0.36, 1] }}
     >
-      <video
-        ref={videoRef}
-        autoPlay
-        muted
-        loop
-        playsInline
-        preload="auto"
-        className="absolute top-0 left-0 h-full w-full object-cover"
-      >
-        <source src="/puff.webm" type="video/webm" />
-        <source src="/puff.mp4" type="video/mp4" />
-      </video>
+      <ThemeBackground theme={homeTheme} />
       <div className="absolute inset-0 h-full w-full bg-black/70"></div>
 
       {/* Main Content Panel */}
       <motion.div
+        data-landing-content
         layout
-        transition={{ duration: 0.7, ease: [0.32, 0.72, 0, 1] }}
+        animate={{ opacity: isOnlineLoading ? 0 : 1, scale: isOnlineLoading && !shouldReduceMotion ? 0.98 : 1 }}
+        transition={{ duration: shouldReduceMotion ? 0 : 0.7, ease: [0.32, 0.72, 0, 1] }}
         className="relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-[#121212]/80"
       >
         <AnimatePresence mode="wait" initial={false}>
@@ -105,11 +95,11 @@ export default function LandingPage({ onStartOffline, onStartOnline, isOnlineLoa
                 </motion.button>
               </motion.div>
               <motion.div className="mt-8 w-full text-center" variants={itemVariants}>
-                <p className="font-mono text-[10px] font-semibold uppercase tracking-widest text-[#F5F5DC]/50">Stable 2.1.0</p>
+                <p className="font-mono text-[10px] font-semibold uppercase tracking-widest text-[#F5F5DC]/50">Stable 2.1.3</p>
                 <p className="mt-2 font-mono text-xs text-[#F5F5DC]/50 italic">
                   {devMessage}{' '}<a href="https://github.com/rajin-khan/PuffNotes/discussions/1" target="_blank" rel="noopener noreferrer" className="underline hover:text-white/70 transition-colors">here</a>!
                 </p>
-                <p className="mt-2 font-mono text-xs text-white/40">Created by{' '}<a href="https://rajinkhan.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-white/70 transition-colors">Rajin Khan</a></p>
+                <p className="mt-2 font-mono text-xs text-white/40">Created by{' '}<a href="https://rajinkhan.com" target="_blank" rel="noopener noreferrer" className="font-creator-signature underline transition-colors hover:text-white/70">Rajin Khan</a></p>
                 <p className="mt-1 font-mono text-xs text-white/30">
                   <a href="/welcome" className="underline hover:text-white/50 transition-colors">About Puffnotes</a>
                 </p>

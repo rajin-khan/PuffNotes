@@ -1,0 +1,248 @@
+/*
+ * Komorebi — rainlit woodland stationery
+ *
+ * This theme is intentionally scoped to its data attribute so the established
+ * Warm and Galaxy themes keep their exact utility-class output and styling.
+ */
+[data-puffnotes-theme="komorebi"] {
+  --komorebi-sumi: #071c20;
+  --komorebi-paper: #352820;
+  --komorebi-paper-focus: #3b2d24;
+  --komorebi-paper-soft: #44342a;
+  --komorebi-ink: #f4ebd7;
+  --komorebi-ink-soft: #dfd2b9;
+  --komorebi-muted: #b8aa90;
+  --komorebi-placeholder: #ad9d84;
+  --komorebi-celadon: #b7cd9b;
+  --komorebi-moss: #2e5d56;
+  --komorebi-amber: #e7bd87;
+  --komorebi-border: #685541;
+  --komorebi-border-soft: #514233;
+
+  color-scheme: dark;
+}
+
+/* The root fallback is visible before/around the full-viewport video. */
+[data-puffnotes-theme="komorebi"].bg-\[\#fdf6ec\] {
+  background-color: var(--komorebi-sumi) !important;
+}
+
+.komorebi-editor-surface {
+  background-color: rgb(53 40 32 / 95%) !important;
+  border-top: 1px solid var(--komorebi-border);
+  box-shadow: 0 -12px 36px rgba(7, 28, 32, 0.28) !important;
+}
+
+.komorebi-editor-focus {
+  background-color: rgb(59 45 36 / 95%) !important;
+}
+
+.komorebi-editor-tab {
+  background-color: var(--komorebi-paper) !important;
+  border-color: var(--komorebi-border) !important;
+  box-shadow: 0 -8px 24px rgba(7, 28, 32, 0.24) !important;
+}
+
+.komorebi-toolbar {
+  background-color: var(--komorebi-sumi) !important;
+  border-color: #3e5a4b !important;
+  box-shadow: 0 6px 18px rgba(7, 28, 32, 0.24) !important;
+}
+
+.komorebi-modal-surface {
+  background-color: #30241d !important;
+  border-color: var(--komorebi-border) !important;
+  box-shadow: 0 18px 48px rgba(7, 28, 32, 0.34) !important;
+}
+
+/* Remap the existing Warm utility output only inside the Komorebi scope. */
+[data-puffnotes-theme="komorebi"] .bg-white,
+[data-puffnotes-theme="komorebi"] .bg-\[\#fdfbf7\] {
+  background-color: var(--komorebi-paper) !important;
+}
+
+[data-puffnotes-theme="komorebi"] .bg-\[\#fff7ee\],
+[data-puffnotes-theme="komorebi"] .bg-\[\#f8f1e8\],
+[data-puffnotes-theme="komorebi"] .bg-\[\#f8f6f2\],
+[data-puffnotes-theme="komorebi"] .bg-\[\#fdf6ec\],
+[data-puffnotes-theme="komorebi"] .bg-gray-100 {
+  background-color: var(--komorebi-paper-soft) !important;
+}
+
+[data-puffnotes-theme="komorebi"] .bg-\[\#f0e9df\],
+[data-puffnotes-theme="komorebi"] .bg-gray-200 {
+  background-color: #4a392d !important;
+}
+
+[data-puffnotes-theme="komorebi"] .bg-\[\#9a8c73\] {
+  background-color: var(--komorebi-moss) !important;
+}
+
+[data-puffnotes-theme="komorebi"] .text-\[\#1a1a1a\],
+[data-puffnotes-theme="komorebi"] .text-\[\#333\],
+[data-puffnotes-theme="komorebi"] .text-gray-800,
+[data-puffnotes-theme="komorebi"] .text-gray-900 {
+  color: var(--komorebi-ink) !important;
+}
+
+[data-puffnotes-theme="komorebi"] .text-gray-700,
+[data-puffnotes-theme="komorebi"] .text-gray-600 {
+  color: var(--komorebi-ink-soft) !important;
+}
+
+[data-puffnotes-theme="komorebi"] .text-gray-500,
+[data-puffnotes-theme="komorebi"] .text-\[\#8c6e54\],
+[data-puffnotes-theme="komorebi"] .text-\[\#9c8063\] {
+  color: var(--komorebi-muted) !important;
+}
+
+[data-puffnotes-theme="komorebi"] .text-gray-400 {
+  color: var(--komorebi-placeholder) !important;
+}
+
+[data-puffnotes-theme="komorebi"] .text-orange-400 {
+  color: var(--komorebi-amber) !important;
+}
+
+[data-puffnotes-theme="komorebi"] .text-\[\#9a8c73\] {
+  color: var(--komorebi-celadon) !important;
+}
+
+[data-puffnotes-theme="komorebi"] .border-\[\#d4c4a8\],
+[data-puffnotes-theme="komorebi"] .border-\[\#e6ddcc\],
+[data-puffnotes-theme="komorebi"] .border-\[\#e0ddd5\],
+[data-puffnotes-theme="komorebi"] .border-\[\#9a8c73\],
+[data-puffnotes-theme="komorebi"] .border-gray-300 {
+  border-color: var(--komorebi-border) !important;
+}
+
+[data-puffnotes-theme="komorebi"] .border-gray-100,
+[data-puffnotes-theme="komorebi"] .border-gray-200 {
+  border-color: var(--komorebi-border-soft) !important;
+}
+
+[data-puffnotes-theme="komorebi"] .focus\:border-gray-300:focus {
+  border-color: var(--komorebi-amber) !important;
+}
+
+[data-puffnotes-theme="komorebi"] .focus\:ring-\[\#9a8c73\]:focus {
+  --tw-ring-color: var(--komorebi-moss) !important;
+}
+
+[data-puffnotes-theme="komorebi"] .placeholder\:text-gray-400::placeholder {
+  color: var(--komorebi-placeholder) !important;
+}
+
+[data-puffnotes-theme="komorebi"] .hover\:text-gray-600:hover,
+[data-puffnotes-theme="komorebi"] .hover\:text-gray-700:hover,
+[data-puffnotes-theme="komorebi"] .hover\:text-gray-800:hover,
+[data-puffnotes-theme="komorebi"] .hover\:text-gray-900:hover {
+  color: var(--komorebi-celadon) !important;
+}
+
+[data-puffnotes-theme="komorebi"] .hover\:text-\[\#8c6e54\]:hover,
+[data-puffnotes-theme="komorebi"] .hover\:text-\[\#9a8c73\]:hover {
+  color: var(--komorebi-amber) !important;
+}
+
+[data-puffnotes-theme="komorebi"] .hover\:bg-\[\#f0e9df\]:hover,
+[data-puffnotes-theme="komorebi"] .hover\:bg-gray-200:hover {
+  background-color: #4a392d !important;
+}
+
+[data-puffnotes-theme="komorebi"] .hover\:bg-\[\#f8f6f2\]:hover {
+  background-color: #4a392d !important;
+}
+
+[data-puffnotes-theme="komorebi"] .hover\:border-\[\#d4c4a8\]:hover {
+  border-color: var(--komorebi-amber) !important;
+}
+
+[data-puffnotes-theme="komorebi"] .komorebi-toolbar .text-gray-400,
+[data-puffnotes-theme="komorebi"] .komorebi-toolbar .text-gray-600 {
+  color: var(--komorebi-celadon) !important;
+}
+
+[data-puffnotes-theme="komorebi"] .komorebi-toolbar .text-orange-200,
+[data-puffnotes-theme="komorebi"] .komorebi-toolbar .text-yellow-500 {
+  color: #f3d89e !important;
+}
+
+[data-puffnotes-theme="komorebi"] .komorebi-toolbar .text-green-500 {
+  color: var(--komorebi-celadon) !important;
+}
+
+[data-puffnotes-theme="komorebi"] .komorebi-toolbar .bg-yellow-500 {
+  background-color: var(--komorebi-amber) !important;
+}
+
+/* Component materials win over the remapped base utilities above. */
+[data-puffnotes-theme="komorebi"] .komorebi-editor-surface.komorebi-editor-surface {
+  background-color: rgb(53 40 32 / 95%) !important;
+}
+
+[data-puffnotes-theme="komorebi"] .komorebi-editor-focus.komorebi-editor-focus {
+  background-color: rgb(59 45 36 / 95%) !important;
+}
+
+[data-puffnotes-theme="komorebi"] .komorebi-editor-tab.komorebi-editor-tab {
+  background-color: var(--komorebi-paper) !important;
+}
+
+[data-puffnotes-theme="komorebi"] .komorebi-modal-surface.komorebi-modal-surface {
+  background-color: #30241d !important;
+}
+
+/* Markdown variants are emitted on their wrapper, so recolor their elements directly. */
+[data-puffnotes-theme="komorebi"].puffnotes-markdown :is(h1, h2, h3),
+[data-puffnotes-theme="komorebi"] .puffnotes-markdown :is(h1, h2, h3) {
+  color: var(--komorebi-ink) !important;
+}
+
+[data-puffnotes-theme="komorebi"].puffnotes-markdown a,
+[data-puffnotes-theme="komorebi"] .puffnotes-markdown a {
+  color: var(--komorebi-celadon) !important;
+}
+
+[data-puffnotes-theme="komorebi"].puffnotes-markdown a:hover,
+[data-puffnotes-theme="komorebi"] .puffnotes-markdown a:hover {
+  color: var(--komorebi-amber) !important;
+}
+
+[data-puffnotes-theme="komorebi"].puffnotes-markdown blockquote,
+[data-puffnotes-theme="komorebi"] .puffnotes-markdown blockquote {
+  border-color: var(--komorebi-border) !important;
+  color: var(--komorebi-muted) !important;
+}
+
+[data-puffnotes-theme="komorebi"].puffnotes-markdown code:not(pre > code),
+[data-puffnotes-theme="komorebi"] .puffnotes-markdown code:not(pre > code) {
+  background-color: var(--komorebi-paper-soft) !important;
+  border-color: var(--komorebi-border) !important;
+  color: var(--komorebi-celadon) !important;
+}
+
+[data-puffnotes-theme="komorebi"].puffnotes-markdown pre,
+[data-puffnotes-theme="komorebi"] .puffnotes-markdown pre {
+  background-color: #281e18 !important;
+  border-color: var(--komorebi-border-soft) !important;
+  color: var(--komorebi-ink) !important;
+}
+
+[data-puffnotes-theme="komorebi"].puffnotes-markdown hr,
+[data-puffnotes-theme="komorebi"] .puffnotes-markdown hr {
+  border-color: var(--komorebi-border-soft) !important;
+}
+
+[data-puffnotes-theme="komorebi"].puffnotes-markdown th,
+[data-puffnotes-theme="komorebi"] .puffnotes-markdown th {
+  background-color: var(--komorebi-paper-soft) !important;
+  border-color: var(--komorebi-border) !important;
+  color: var(--komorebi-ink) !important;
+}
+
+[data-puffnotes-theme="komorebi"].puffnotes-markdown td,
+[data-puffnotes-theme="komorebi"] .puffnotes-markdown td {
+  border-color: var(--komorebi-border) !important;
+  color: var(--komorebi-ink-soft) !important;
+}

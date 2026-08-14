@@ -1,8 +1,9 @@
 // src/components/SettingsModal.jsx
 import { useState, useRef, useEffect } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { X, KeyRound, AlertTriangle, Check, Wand2, Palette, Monitor, Info } from 'lucide-react';
 import { THEMES } from '../lib/themeManager';
+import { ModalPresence } from './ModalMotion';
 
 const themeData = {
   [THEMES.WARM]: {
@@ -16,31 +17,38 @@ const themeData = {
     description: 'Cosmic and mysterious with deep blues',
     colors: ['#0a0e27', '#9b59b6', '#4a5178'],
     video: '/galaxy.webm'
+  },
+  [THEMES.KOMOREBI]: {
+    name: 'Komorebi',
+    description: 'Rainlit woodland with a quiet cacao writing page',
+    colors: ['#071c20', '#352820', '#e7bd87'],
+    video: '/komorebi.mp4'
   }
 };
 
 export default function SettingsModal({ isOpen, onClose, currentTheme, onThemeChange, userApiKey, onSaveApiKey, theme = THEMES.WARM }) {
+  const shouldReduceMotion = useReducedMotion();
   const [activeTab, setActiveTab] = useState('themes');
   const [apiKeyError, setApiKeyError] = useState(false);
   const [apiKeySaveFeedback, setApiKeySaveFeedback] = useState('');
   const [localApiKey, setLocalApiKey] = useState(userApiKey || '');
   const apiKeyInputRef = useRef(null);
 
-  // Force video reload when modal opens
+  // Keep only the selected preview moving to avoid decoding every theme at once.
   useEffect(() => {
-    if (isOpen) {
-      // Small delay to ensure DOM is ready
-      setTimeout(() => {
-        const videos = document.querySelectorAll('video');
-        videos.forEach(video => {
-          video.load();
-          video.play().catch(err => {
-            console.warn('Video autoplay failed:', err);
-          });
+    if (!isOpen || activeTab !== 'themes') return;
+
+    const previewVideos = document.querySelectorAll('[data-theme-preview]');
+    previewVideos.forEach((video) => {
+      if (!shouldReduceMotion && video.dataset.themeKey === currentTheme) {
+        video.play().catch((err) => {
+          console.warn('Theme preview autoplay failed:', err);
         });
-      }, 100);
-    }
-  }, [isOpen, activeTab]);
+      } else {
+        video.pause();
+      }
+    });
+  }, [isOpen, activeTab, currentTheme, shouldReduceMotion]);
 
   const handleSaveApiKey = (key) => {
     const trimmedKey = key ? key.trim() : '';
@@ -54,26 +62,14 @@ export default function SettingsModal({ isOpen, onClose, currentTheme, onThemeCh
     onThemeChange(themeKey);
   };
 
-  if (!isOpen) return null;
-
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          className="fixed inset-0 z-[70] bg-black bg-opacity-50 flex items-center justify-center p-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onClose}
-        >
-          <motion.div
-            className={`border rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] text-left font-serif relative overflow-hidden ${theme === THEMES.GALAXY ? 'bg-[#0f1642] border-[#2d3561]' : 'bg-white border-[#e6ddcc]'}`}
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.95, opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            onClick={(e) => e.stopPropagation()}
-          >
+    <ModalPresence
+      isOpen={isOpen}
+      kind="settings"
+      theme={theme}
+      onBackdropClick={onClose}
+      panelClassName={`border rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] text-left font-serif relative overflow-hidden ${theme === THEMES.GALAXY ? 'bg-[#0f1642] border-[#2d3561]' : 'bg-white border-[#e6ddcc]'} ${theme === THEMES.KOMOREBI ? 'komorebi-modal-surface' : ''}`}
+    >
             {/* Header */}
             <div className={`flex items-center justify-between p-6 border-b ${theme === THEMES.GALAXY ? 'border-[#2d3561]' : 'border-gray-200'}`}>
               <h2 className={`text-2xl font-medium ${theme === THEMES.GALAXY ? 'text-[#e8eaf6]' : 'text-[#1a1a1a]'}`}>
@@ -157,7 +153,7 @@ export default function SettingsModal({ isOpen, onClose, currentTheme, onThemeCh
                         Select a theme that matches your mood and style. Each theme includes a unique background video and color palette.
                       </p>
                       
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {Object.entries(themeData).map(([themeKey, themeInfo]) => (
                           <motion.div
                             key={themeKey}
@@ -178,29 +174,24 @@ export default function SettingsModal({ isOpen, onClose, currentTheme, onThemeCh
                             <div className="relative h-32 bg-black">
                               <video
                                 key={themeKey}
+                                data-theme-preview
+                                data-theme-key={themeKey}
                                 className="w-full h-full object-cover relative z-10"
                                 muted
                                 loop
                                 playsInline
-                                preload="auto"
+                                autoPlay={!shouldReduceMotion && currentTheme === themeKey}
+                                preload={currentTheme === themeKey ? 'auto' : 'metadata'}
                                 onError={(e) => {
                                   console.warn(`Failed to load video for ${themeKey}:`, e);
                                   e.target.style.display = 'none';
                                 }}
-                                onLoadStart={() => {
-                                  console.log(`Loading video for ${themeKey}: ${themeInfo.video}`);
-                                }}
                                 onCanPlay={(e) => {
-                                  console.log(`Video can play for ${themeKey}`);
-                                  e.target.play().catch(err => {
-                                    console.warn(`Autoplay failed for ${themeKey}:`, err);
-                                  });
-                                }}
-                                onLoadedData={(e) => {
-                                  console.log(`Video data loaded for ${themeKey}`);
-                                  e.target.play().catch(err => {
-                                    console.warn(`Autoplay failed for ${themeKey}:`, err);
-                                  });
+                                  if (!shouldReduceMotion && currentTheme === themeKey) {
+                                    e.target.play().catch(err => {
+                                      console.warn(`Autoplay failed for ${themeKey}:`, err);
+                                    });
+                                  }
                                 }}
                                 src={themeInfo.video}
                               />
@@ -379,7 +370,7 @@ export default function SettingsModal({ isOpen, onClose, currentTheme, onThemeCh
                               href="https://rajinkhan.com" 
                               target="_blank" 
                               rel="noopener noreferrer" 
-                              className={`underline hover:opacity-80 transition ${theme === THEMES.GALAXY ? 'text-[#9b59b6]' : 'text-[#9a8c73]'}`}
+                              className={`font-creator-signature underline transition hover:opacity-80 ${theme === THEMES.GALAXY ? 'text-[#9b59b6]' : 'text-[#9a8c73]'}`}
                             >
                               Rajin Khan
                             </a>
@@ -422,9 +413,6 @@ export default function SettingsModal({ isOpen, onClose, currentTheme, onThemeCh
                 Done
               </button>
             </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+    </ModalPresence>
   );
 }

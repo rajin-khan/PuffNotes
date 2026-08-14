@@ -2,6 +2,22 @@
 @import "tailwindcss/utilities";
 @import "./styles/warmTheme.css";
 @import "./styles/galaxyTheme.css";
+@import "./styles/komorebiTheme.css";
+
+@font-face {
+  font-family: "La Belle Aurore";
+  src: url("/la-belle-aurore-latin.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+.font-creator-signature {
+  font-family: "La Belle Aurore", "Bradley Hand", "Segoe Print", cursive;
+  font-style: normal;
+  font-weight: 400;
+  font-synthesis: none;
+}
 
 html,
 body {
@@ -18,4 +34,23 @@ html:has([data-puffnotes-theme="warm"]) {
 
 html:has([data-puffnotes-theme="galaxy"]) {
   background-color: #0a0e27;
+}
+
+html:has([data-puffnotes-theme="komorebi"]) {
+  background-color: #071c20;
+}
+
+/* Theme selection remains calm inside Settings instead of recoloring in one frame. */
+[data-modal-kind="settings"][data-modal-panel],
+[data-modal-kind="settings"][data-modal-panel] :where(div, h2, h3, h4, p, span, button, input) {
+  transition-property: color, background-color, border-color;
+  transition-duration: 500ms;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-modal-kind="settings"][data-modal-panel],
+  [data-modal-kind="settings"][data-modal-panel] :where(div, h2, h3, h4, p, span, button, input) {
+    transition-duration: 0.01ms;
+  }
 }

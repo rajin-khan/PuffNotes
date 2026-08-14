@@ -1,8 +1,8 @@
 // src/components/KeyboardShortcutsModal.jsx
 import React from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
 import { X, Keyboard } from 'lucide-react';
 import { THEMES } from '../lib/themeManager';
+import { ModalPresence } from './ModalMotion';
 
 const shortcuts = [
   { action: 'Toggle Editor', keys: 'Cmd/Ctrl + .' },
@@ -16,26 +16,14 @@ const shortcuts = [
 ];
 
 export default function KeyboardShortcutsModal({ isOpen, onClose, theme = THEMES.WARM }) {
-  if (!isOpen) return null;
-
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          className="fixed inset-0 z-[70] bg-black bg-opacity-50 flex items-center justify-center p-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onClose}
-        >
-          <motion.div
-            className={`border rounded-xl shadow-2xl p-8 pt-6 w-full max-w-sm text-left font-serif relative overflow-y-auto max-h-[90vh] ${theme === THEMES.GALAXY ? 'bg-[#0f1642] border-[#2d3561]' : 'bg-white border-[#e6ddcc]'}`}
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.95, opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            onClick={(e) => e.stopPropagation()}
-          >
+    <ModalPresence
+      isOpen={isOpen}
+      kind="shortcuts"
+      theme={theme}
+      onBackdropClick={onClose}
+      panelClassName={`border rounded-xl shadow-2xl p-8 pt-6 w-full max-w-sm text-left font-serif relative overflow-y-auto max-h-[90vh] ${theme === THEMES.GALAXY ? 'bg-[#0f1642] border-[#2d3561]' : 'bg-white border-[#e6ddcc]'} ${theme === THEMES.KOMOREBI ? 'komorebi-modal-surface' : ''}`}
+    >
             <button
               onClick={onClose}
               className={`absolute top-3 right-3 transition ${theme === THEMES.GALAXY ? 'text-[#8b9dc3] hover:text-[#e8eaf6]' : 'text-gray-400 hover:text-gray-600'}`}
@@ -58,7 +46,7 @@ export default function KeyboardShortcutsModal({ isOpen, onClose, theme = THEMES
                     <span className="text-right flex items-center space-x-1">
                       {keyParts.map((part, index) => (
                         <React.Fragment key={index}>
-                          <code>{part.trim()}</code>
+                          <code className={theme === THEMES.KOMOREBI ? 'bg-[#44342a] border border-[#685541] text-[#f4ebd7]' : ''}>{part.trim()}</code>
                           {index < keyParts.length - 1 && (
                             <span className={`mx-0.5 ${theme === THEMES.GALAXY ? 'text-[#6c7b95]' : 'text-gray-400'}`}>+</span>
                           )}
@@ -74,13 +62,13 @@ export default function KeyboardShortcutsModal({ isOpen, onClose, theme = THEMES
             <style jsx global>{`
               .shortcuts-modal-content code {
                 display: inline-block;
-                background-color: ${theme === THEMES.GALAXY ? '#2d3561' : '#ffffff'};
+                background-color: ${theme === THEMES.GALAXY ? '#2d3561' : theme === THEMES.KOMOREBI ? '#44342a' : '#ffffff'};
                 padding: 4px 8px;
                 border-radius: 6px;
-                border: 1px solid ${theme === THEMES.GALAXY ? '#4a5178' : '#d1d5db'};
+                border: 1px solid ${theme === THEMES.GALAXY ? '#4a5178' : theme === THEMES.KOMOREBI ? '#685541' : '#d1d5db'};
                 box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
                 font-size: 0.85em;
-                color: ${theme === THEMES.GALAXY ? '#e8eaf6' : '#374151'};
+                color: ${theme === THEMES.GALAXY ? '#e8eaf6' : theme === THEMES.KOMOREBI ? '#f4ebd7' : '#374151'};
                 line-height: 1;
                 vertical-align: middle;
                 font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
@@ -96,9 +84,6 @@ export default function KeyboardShortcutsModal({ isOpen, onClose, theme = THEMES
             >
               Close
             </button>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+    </ModalPresence>
   );
 }

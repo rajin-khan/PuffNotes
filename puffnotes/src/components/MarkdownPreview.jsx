@@ -8,10 +8,14 @@ export default function MarkdownPreview({ markdownText, theme = THEMES.WARM }) {
   const textToRender = typeof markdownText === 'string' ? markdownText : '';
   
   const isGalaxyTheme = theme === THEMES.GALAXY;
+  const isKomorebiTheme = theme === THEMES.KOMOREBI;
   
   return (
     // This outer div handles scrolling and fills available height
-    <div className={`w-full h-full font-mono text-sm leading-relaxed ${isGalaxyTheme ? 'text-[#e8eaf6]' : 'text-gray-800'}`}>
+    <div
+      data-puffnotes-theme={theme}
+      className={`puffnotes-markdown w-full h-full font-mono text-sm leading-relaxed ${isGalaxyTheme ? 'text-[#e8eaf6]' : isKomorebiTheme ? 'text-[#f4ebd7]' : 'text-gray-800'}`}
+    >
       {/* Inner div for padding and applying markdown styles */}
       <div
         className={`

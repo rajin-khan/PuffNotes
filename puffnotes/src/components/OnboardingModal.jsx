@@ -1,8 +1,9 @@
 // src/components/OnboardingModal.jsx
 import { useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { X, ArrowRight, ArrowLeft, Check, Wand2 } from 'lucide-react';
 import { THEMES } from '../lib/themeManager';
+import { ModalFrame } from './ModalMotion';
 
 // Animation variants for the text content
 const textVariants = {
@@ -12,6 +13,7 @@ const textVariants = {
 };
 
 export default function OnboardingModal({ steps, onFinish, theme = THEMES.WARM }) {
+  const shouldReduceMotion = useReducedMotion();
   const [currentStep, setCurrentStep] = useState(0);
 
   const handleNext = () => {
@@ -29,19 +31,11 @@ export default function OnboardingModal({ steps, onFinish, theme = THEMES.WARM }
   };
 
   return (
-    <motion.div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+    <ModalFrame
+      kind="help"
+      theme={theme}
+      panelClassName={`relative flex w-full max-w-xl flex-col overflow-hidden rounded-2xl border shadow-2xl ${theme === THEMES.GALAXY ? 'border-[#2d3561] bg-[#0f1642]' : theme === THEMES.KOMOREBI ? 'border-[#315047] bg-[#071c20]' : 'border-white/10 bg-[#121212]'}`}
     >
-      <motion.div
-        className={`relative flex w-full max-w-xl flex-col overflow-hidden rounded-2xl border shadow-2xl ${theme === THEMES.GALAXY ? 'border-[#2d3561] bg-[#0f1642]' : 'border-white/10 bg-[#121212]'}`}
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.9, opacity: 0 }}
-        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-      >
         {/* Top Part: Full-Width Video Showcase */}
         <div className="relative w-full aspect-video bg-black">
           <AnimatePresence>
@@ -49,7 +43,7 @@ export default function OnboardingModal({ steps, onFinish, theme = THEMES.WARM }
               key={steps[currentStep].video}
               className="absolute h-full w-full object-cover"
               src={steps[currentStep].video}
-              autoPlay
+              autoPlay={!shouldReduceMotion}
               loop
               muted
               playsInline
@@ -63,7 +57,7 @@ export default function OnboardingModal({ steps, onFinish, theme = THEMES.WARM }
         
         {/* Bottom Part: Text Content and Navigation */}
         <div className="flex flex-col p-6 sm:p-8">
-          <button onClick={onFinish} className={`absolute top-4 right-4 transition-colors ${theme === THEMES.GALAXY ? 'text-[#8b9dc3] hover:text-[#e8eaf6]' : 'text-white/50 hover:text-white'}`}>
+          <button aria-label="Close help" onClick={onFinish} className={`absolute top-4 right-4 transition-colors ${theme === THEMES.GALAXY ? 'text-[#8b9dc3] hover:text-[#e8eaf6]' : theme === THEMES.KOMOREBI ? 'text-[#b7cd9b] hover:text-[#f6eed0]' : 'text-white/50 hover:text-white'}`}>
             <X size={20} />
           </button>
           
@@ -78,13 +72,13 @@ export default function OnboardingModal({ steps, onFinish, theme = THEMES.WARM }
                 exit="exit"
                 className="text-center"
               >
-                <p className={`font-mono text-xs font-semibold uppercase tracking-widest ${theme === THEMES.GALAXY ? 'text-[#9b59b6]/70' : 'text-yellow-400/50'}`}>
+                <p className={`font-mono text-xs font-semibold uppercase tracking-widest ${theme === THEMES.GALAXY ? 'text-[#9b59b6]/70' : theme === THEMES.KOMOREBI ? 'text-[#e7bd87]/80' : 'text-yellow-400/50'}`}>
                   Step {currentStep + 1} / {steps.length}
                 </p>
-                <h3 className={`mt-3 font-serif text-2xl font-medium sm:text-3xl ${theme === THEMES.GALAXY ? 'text-[#e8eaf6]/90' : 'text-[#F5F5DC]/90'}`} style={{ textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
+                <h3 className={`mt-3 font-serif text-2xl font-medium sm:text-3xl ${theme === THEMES.GALAXY ? 'text-[#e8eaf6]/90' : theme === THEMES.KOMOREBI ? 'text-[#f6eed0]/95' : 'text-[#F5F5DC]/90'}`} style={{ textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
                   {steps[currentStep].title}
                 </h3>
-                <p className={`mt-3 font-mono text-sm leading-relaxed ${theme === THEMES.GALAXY ? 'text-[#b8bfde]/70' : 'text-[#F5F5DC]/60'}`} style={{ textShadow: '0 1px 5px rgba(0,0,0,0.5)' }}>
+                <p className={`mt-3 font-mono text-sm leading-relaxed ${theme === THEMES.GALAXY ? 'text-[#b8bfde]/70' : theme === THEMES.KOMOREBI ? 'text-[#d6dfca]/75' : 'text-[#F5F5DC]/60'}`} style={{ textShadow: '0 1px 5px rgba(0,0,0,0.5)' }}>
                   {steps[currentStep].description}
                 </p>
               </motion.div>
@@ -93,9 +87,9 @@ export default function OnboardingModal({ steps, onFinish, theme = THEMES.WARM }
 
           {/* Footer and Navigation */}
           <div className="mt-auto">
-            <div className={`relative h-1 w-full rounded-full ${theme === THEMES.GALAXY ? 'bg-[#2d3561]' : 'bg-white/10'}`}>
+            <div className={`relative h-1 w-full rounded-full ${theme === THEMES.GALAXY ? 'bg-[#2d3561]' : theme === THEMES.KOMOREBI ? 'bg-[#2e5d56]/45' : 'bg-white/10'}`}>
               <motion.div
-                className={`absolute top-0 left-0 h-1 rounded-full ${theme === THEMES.GALAXY ? 'bg-[#9b59b6]' : 'bg-[#F5F5DC]'}`}
+                className={`absolute top-0 left-0 h-1 rounded-full ${theme === THEMES.GALAXY ? 'bg-[#9b59b6]' : theme === THEMES.KOMOREBI ? 'bg-[#e7bd87]' : 'bg-[#F5F5DC]'}`}
                 animate={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
                 transition={{ duration: 0.5, ease: 'easeInOut' }}
               />
@@ -108,7 +102,7 @@ export default function OnboardingModal({ steps, onFinish, theme = THEMES.WARM }
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className={`group flex items-center gap-2 rounded-full px-4 py-2 font-mono text-sm transition-colors ${theme === THEMES.GALAXY ? 'text-[#8b9dc3] hover:text-[#e8eaf6]' : 'text-white/60 hover:text-white'}`}
+                    className={`group flex items-center gap-2 rounded-full px-4 py-2 font-mono text-sm transition-colors ${theme === THEMES.GALAXY ? 'text-[#8b9dc3] hover:text-[#e8eaf6]' : theme === THEMES.KOMOREBI ? 'text-[#b7cd9b] hover:text-[#f6eed0]' : 'text-white/60 hover:text-white'}`}
                   >
                     <ArrowLeft size={16} /> Back
                   </motion.button>
@@ -119,7 +113,7 @@ export default function OnboardingModal({ steps, onFinish, theme = THEMES.WARM }
               </AnimatePresence>
               <motion.button
                 onClick={handleNext}
-                className={`group flex items-center gap-2 rounded-full px-5 py-2.5 font-mono text-sm font-semibold transition-opacity hover:opacity-80 ${theme === THEMES.GALAXY ? 'bg-[#9b59b6] text-[#e8eaf6]' : 'bg-[#F5F5DC] text-black'}`}
+                className={`group flex items-center gap-2 rounded-full px-5 py-2.5 font-mono text-sm font-semibold transition-opacity hover:opacity-80 ${theme === THEMES.GALAXY ? 'bg-[#9b59b6] text-[#e8eaf6]' : theme === THEMES.KOMOREBI ? 'bg-[#f4ebd7] text-[#172a27]' : 'bg-[#F5F5DC] text-black'}`}
                 whileTap={{ scale: 0.95 }}
               >
                 {currentStep === steps.length - 1 ? 'Get Started' : 'Next'}
@@ -128,7 +122,6 @@ export default function OnboardingModal({ steps, onFinish, theme = THEMES.WARM }
             </div>
           </div>
         </div>
-      </motion.div>
-    </motion.div>
+    </ModalFrame>
   );
 }

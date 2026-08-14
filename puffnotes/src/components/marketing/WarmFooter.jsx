@@ -51,7 +51,7 @@ const WarmFooter = () => {
           >
             © {new Date().getFullYear()} PuffNotes
             <span className="text-xs opacity-70">·</span>
-            <span className="text-xs opacity-70">Created by <a href="https://rajinkhan.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-[#2A1A0E] transition-colors">Rajin Khan</a></span>
+            <span className="text-xs opacity-70">Created by <a href="https://rajinkhan.com" target="_blank" rel="noopener noreferrer" className="font-creator-signature underline transition-colors hover:text-[#2A1A0E]">Rajin Khan</a></span>
           </motion.div>
         </div>
       </div>

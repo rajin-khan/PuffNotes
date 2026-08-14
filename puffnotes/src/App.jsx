@@ -10,6 +10,7 @@ import OnlineSetupModal from './components/OnlineSetupModal';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth, signInWithGoogle, signOut } from './lib/firebase';
 import { findOrCreatePuffnotesFolder } from './lib/googleDrive';
+import { getStoredTheme } from './lib/themeManager';
 
 export default function App() {
   const [mode, setMode] = useState('landing');
@@ -109,6 +110,7 @@ export default function App() {
       case 'online':
         return user && accessToken && folderId ? (
           <OnlineApp 
+            key="online"
             user={user} 
             accessToken={accessToken} 
             folderId={folderId} 
@@ -118,11 +120,12 @@ export default function App() {
           />
         ) : null;
       case 'offline':
-        return <OfflineApp onGoToLanding={handleGoToLanding} />;
+        return <OfflineApp key="offline" onGoToLanding={handleGoToLanding} />;
       case 'landing':
       default:
         return (
           <LandingPage
+            key="landing"
             onStartOffline={handleStartOffline}
             onStartOnline={handleStartOnline}
             isOnlineLoading={isOnlineLoading}
@@ -134,7 +137,12 @@ export default function App() {
   return (
     <Router>
       <AnimatePresence>
-        {showSetupModal && <OnlineSetupModal steps={setupSteps} theme="warm" />}
+        {showSetupModal && (
+          <OnlineSetupModal
+            steps={setupSteps}
+            theme={getStoredTheme()}
+          />
+        )}
       </AnimatePresence>
       
       <Routes>
@@ -144,7 +152,11 @@ export default function App() {
             onStartOnline={handleStartOnline}
           />
         } />
-        <Route path="/" element={renderContent()} />
+        <Route path="/" element={
+          <AnimatePresence mode="sync" initial={false}>
+            {renderContent()}
+          </AnimatePresence>
+        } />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
