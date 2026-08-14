@@ -13,17 +13,6 @@ const ThemeSwitcher = ({ currentTheme, onThemeChange }) => {
     onThemeChange(nextTheme);
   };
 
-  const getThemeIcon = (theme) => {
-    switch (theme) {
-      case THEMES.WARM:
-        return '☀️';
-      case THEMES.GALAXY:
-        return '🌌';
-      default:
-        return '☀️';
-    }
-  };
-
   const getThemeName = (theme) => {
     switch (theme) {
       case THEMES.WARM:

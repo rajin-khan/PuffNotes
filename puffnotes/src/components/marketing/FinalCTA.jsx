@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import WarmButton from './WarmButton';
 
-const FinalCTA = ({ onStartOffline, onStartOnline }) => {
+const FinalCTA = ({ onStartOffline: _onStartOffline, onStartOnline: _onStartOnline }) => {
   return (
     <div className="py-24 px-6" style={{ backgroundColor: '#362112' }}>
       

@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import WarmButton from './WarmButton';
 import SectionWrapper from './SectionWrapper';
 
-const HeroSection = ({ onStartOffline, onStartOnline }) => {
+const HeroSection = ({ onStartOffline: _onStartOffline, onStartOnline: _onStartOnline }) => {
   const [currentText, setCurrentText] = useState('');
   const [isTyping, setIsTyping] = useState(true);
   
@@ -11,8 +11,6 @@ const HeroSection = ({ onStartOffline, onStartOnline }) => {
   const cleanText = "# Meeting Notes\n\n## Project Ideas\n- Research new features\n- Evaluate user feedback\n- Plan Q1 roadmap\n\n## Budget Considerations\n- Allocate resources for development\n- Review cost projections\n- Optimize spending\n\n## Timeline\n- Set clear milestones\n- Define deliverables\n- Establish deadlines\n\n## Action Items\n- [ ] Schedule follow-up meeting\n- [ ] Prepare budget proposal\n- [ ] Update project timeline";
 
   useEffect(() => {
-    let timeout;
-    
     if (isTyping) {
       // Type messy text - Speed increased from 30ms to 15ms
       let index = 0;

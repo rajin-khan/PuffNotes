@@ -7,7 +7,11 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --test",
+    "audit:osv": "node scripts/audit-lockfile-osv.mjs",
+    "verify": "pnpm run test && pnpm run lint && pnpm run build",
+    "verify:lockfile-age": "node scripts/verify-lockfile-age.mjs"
   },
   "dependencies": {
     "firebase": "^12.3.0",

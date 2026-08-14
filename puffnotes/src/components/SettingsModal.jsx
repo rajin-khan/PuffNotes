@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X, KeyRound, AlertTriangle, Check, Wand2, Palette, Monitor, Info } from 'lucide-react';
-import { THEMES, getThemeColors, getThemeVideos } from '../lib/themeManager';
+import { THEMES } from '../lib/themeManager';
 
 const themeData = {
   [THEMES.WARM]: {

@@ -52,7 +52,7 @@ export async function beautifyNoteWithGroq(note, apiKey) {
           // Try to parse the error response from Groq for more details
           errorBody = await response.json();
           console.error("Groq API Error Response:", errorBody);
-      } catch (parseError) {
+      } catch {
           // If parsing fails, use the raw text
           errorBody = await response.text();
           console.error("Groq API Error Response (non-JSON):", errorBody);

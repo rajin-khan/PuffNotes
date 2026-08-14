@@ -12,7 +12,7 @@ const WarmVideo = ({
 }) => {
   const videoRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isInView, setIsInView] = useState(false);
+  const [_isInView, setIsInView] = useState(false);
 
   useEffect(() => {
     const video = videoRef.current;

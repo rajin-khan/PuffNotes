@@ -2,6 +2,8 @@ import { useState } from 'react'
 
 export default function useFileSystemAccess() {
 
+  const [folderHandle, setFolderHandle] = useState(null)
+
   if (typeof window === 'undefined' || !window.showDirectoryPicker) {
       // Return dummy functions to prevent crashes in unsupported environments
       console.warn("File System Access API not supported in this browser.");
@@ -14,8 +16,6 @@ export default function useFileSystemAccess() {
           deleteNote: async () => console.warn("Not supported."),
       };
     }    
-
-  const [folderHandle, setFolderHandle] = useState(null)
 
   const pickFolder = async () => {
     try {

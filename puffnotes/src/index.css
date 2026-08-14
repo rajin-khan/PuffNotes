@@ -2,3 +2,20 @@
 @import "tailwindcss/utilities";
 @import "./styles/warmTheme.css";
 @import "./styles/galaxyTheme.css";
+
+html,
+body {
+  overscroll-behavior-y: none;
+}
+
+html {
+  background-color: #181818;
+}
+
+html:has([data-puffnotes-theme="warm"]) {
+  background-color: #2a160c;
+}
+
+html:has([data-puffnotes-theme="galaxy"]) {
+  background-color: #0a0e27;
+}
