@@ -1,7 +1,6 @@
 // src/lib/firebase.js
 import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut as firebaseSignOut } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut as firebaseSignOut } from "firebase/auth";
 
 // IMPORTANT: This safely parses the environment variable
 const firebaseConfig = JSON.parse(import.meta.env.VITE_FIREBASE_CONFIG);
@@ -9,7 +8,6 @@ const firebaseConfig = JSON.parse(import.meta.env.VITE_FIREBASE_CONFIG);
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
 // Add required scopes for Google Drive API
@@ -39,4 +37,4 @@ export const signOut = () => {
   return firebaseSignOut(auth);
 };
 
-export { auth, db };
+export const subscribeToAuthChanges = (callback) => onAuthStateChanged(auth, callback);

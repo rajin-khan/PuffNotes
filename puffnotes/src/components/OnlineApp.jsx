@@ -1,5 +1,5 @@
 // src/components/OnlineApp.jsx
-import { useState, useEffect, useRef } from 'react';
+import { useCallback, useState, useEffect, useRef } from 'react';
 import {
   FilePlus, FolderOpen, ChevronDown, ChevronUp, X, Wand2, Check,
   RotateCw, XCircle, CheckCircle, Info, KeyRound, Eye, Pen,
@@ -8,7 +8,6 @@ import {
 import { runBeautifyWorkflow } from '../lib/beautifyWorkflow';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import MarkdownPreview from './MarkdownPreview';
-import { exportNoteToPdf } from '../lib/exportNoteToPdf';
 import KeyboardShortcutsModal from './KeyboardShortcutsModal';
 import OnboardingModal from './OnboardingModal';
 import ThemeSwitcher from './ThemeSwitcher';
@@ -94,6 +93,7 @@ export default function OnlineApp({ user: _user, accessToken, folderId, onSignOu
   const [isLoadingNote, setIsLoadingNote] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const noteContentRef = useRef(note);
+  const isLoadingNoteRef = useRef(false);
   const hasCoveringModal = showSettingsModal || showShortcutsModal || showOnboarding || showFileModal;
 
   useEffect(() => {
@@ -121,28 +121,31 @@ export default function OnlineApp({ user: _user, accessToken, folderId, onSignOu
   };
   
   useEffect(() => { noteContentRef.current = note; }, [note]);
-  const refreshFileList = async () => { try { const files = await listNotes(accessToken, folderId); setFileList(files || []); return files; } catch (err) { console.error("Failed to refresh file list:", err); setFileList([]); return []; } };
-  const handleOpenFile = async (file) => { if (!file || isLoadingNote) return; setIsLoadingNote(true); setShowFileModal(false); try { const content = await getNoteContent(accessToken, file.id); const baseName = file.name.replace(/\.md$/, ""); setNote(content); noteContentRef.current = content; setNoteName(baseName); setActiveNoteId(file.id); setPreviewNote(""); setShowBeautifyControls(false); setOriginalNote(""); setIsPreviewMode(false); setSaveStatus('saved'); } catch (err) { console.error("Error opening file:", err); alert(`Failed to open file: ${file.name}. Error: ${err.message}`); } finally { setIsLoadingNote(false); } };
-  const handleNewNote = () => { if (saveStatus === 'saving') return; setNote(""); noteContentRef.current = ""; setNoteName("untitled"); setActiveNoteId(null); setPreviewNote(""); setShowBeautifyControls(false); setOriginalNote(""); setIsPreviewMode(false); setSaveStatus('unsaved'); };
-  const handleAutoSave = async (isNewNote = false) => { if (!noteName.trim()) { if (isNewNote) alert("Please name your note before saving."); return; } setSaveStatus('saving'); try { const savedFile = await saveNoteContent(accessToken, folderId, noteContentRef.current, activeNoteId, noteName); if (!activeNoteId) { setActiveNoteId(savedFile.id); } await refreshFileList(); setSaveStatus('saved'); } catch (err) { console.error("Autosave failed:", err); setSaveStatus('unsaved'); alert(`Failed to save note: ${err.message}`); } };
-  const handleBeautify = async (isRegeneration = false) => runBeautifyWorkflow({
+  const refreshFileList = useCallback(async () => { try { const files = await listNotes(accessToken, folderId); setFileList(files || []); return files; } catch (err) { console.error("Failed to refresh file list:", err); setFileList([]); return []; } }, [accessToken, folderId]);
+  const handleOpenFile = useCallback(async (file) => { if (!file || isLoadingNoteRef.current) return; isLoadingNoteRef.current = true; setIsLoadingNote(true); setShowFileModal(false); try { const content = await getNoteContent(accessToken, file.id); const baseName = file.name.replace(/\.md$/, ""); setNote(content); noteContentRef.current = content; setNoteName(baseName); setActiveNoteId(file.id); setPreviewNote(""); setShowBeautifyControls(false); setOriginalNote(""); setIsPreviewMode(false); setSaveStatus('saved'); } catch (err) { console.error("Error opening file:", err); alert(`Failed to open file: ${file.name}. Error: ${err.message}`); } finally { isLoadingNoteRef.current = false; setIsLoadingNote(false); } }, [accessToken]);
+  const handleNewNote = useCallback(() => { if (saveStatus === 'saving') return; setNote(""); noteContentRef.current = ""; setNoteName("untitled"); setActiveNoteId(null); setPreviewNote(""); setShowBeautifyControls(false); setOriginalNote(""); setIsPreviewMode(false); setSaveStatus('unsaved'); }, [saveStatus]);
+  const handleAutoSave = useCallback(async (isNewNote = false) => { if (!noteName.trim()) { if (isNewNote) alert("Please name your note before saving."); return; } setSaveStatus('saving'); try { const savedFile = await saveNoteContent(accessToken, folderId, noteContentRef.current, activeNoteId, noteName); if (!activeNoteId) { setActiveNoteId(savedFile.id); } await refreshFileList(); setSaveStatus('saved'); } catch (err) { console.error("Autosave failed:", err); setSaveStatus('unsaved'); alert(`Failed to save note: ${err.message}`); } }, [accessToken, activeNoteId, folderId, noteName, refreshFileList]);
+  const handleBeautify = useCallback(async (isRegeneration = false) => runBeautifyWorkflow({
     isRegeneration, originalNote, note, userApiKey, defaultApiKey: DEFAULT_GROQ_API_KEY,
     apiKeyInputRef, setApiKeyError, setApiKeySaveFeedback, setIsBeautifying,
     setIsPreviewMode, setOriginalNote, setPreviewNote, setShowBeautifyControls,
     setShowSettingsModal,
-  });
+  }), [note, originalNote, userApiKey]);
   const acceptBeautified = () => { setNote(previewNote); setPreviewNote(""); setOriginalNote(""); setShowBeautifyControls(false); setIsPreviewMode(false); setSaveStatus('unsaved'); };
   const rejectBeautified = () => { setPreviewNote(""); setShowBeautifyControls(false); setIsPreviewMode(false); };
   const regenerateBeautified = () => { handleBeautify(true); };
   const handleSaveUserApiKey = (key) => { const trimmedKey = key ? key.trim() : ''; localStorage.setItem(USER_API_KEY_STORAGE_KEY, trimmedKey); setUserApiKey(trimmedKey); setApiKeyError(false); setApiKeySaveFeedback(trimmedKey ? 'API Key saved!' : 'API Key removed.'); setTimeout(() => setApiKeySaveFeedback(''), 2500); };
-  const handleExportPdf = async () => exportNoteToPdf({
-    contentToExport: showBeautifyControls ? previewNote : note,
-    currentTheme, isExportingPdf, noteName, setIsExportingPdf,
-  });
-  const toggleFocusMode = () => setFocusMode(prev => !prev);
+  const handleExportPdf = useCallback(async () => {
+    const { exportNoteToPdf } = await import('../lib/exportNoteToPdf');
+    return exportNoteToPdf({
+      contentToExport: showBeautifyControls ? previewNote : note,
+      currentTheme, isExportingPdf, noteName, setIsExportingPdf,
+    });
+  }, [currentTheme, isExportingPdf, note, noteName, previewNote, showBeautifyControls]);
+  const toggleFocusMode = useCallback(() => setFocusMode(prev => !prev), []);
   const togglePreviewMode = () => { if (!showBeautifyControls) setIsPreviewMode(prev => !prev); };
-  useEffect(() => { const loadInitialFiles = async () => { const files = await refreshFileList(); if (files.length > 0) { handleOpenFile(files[0]); } setIsInitialLoad(false); }; loadInitialFiles(); }, [folderId, accessToken]);
-  useEffect(() => { if (isInitialLoad || saveStatus !== 'unsaved') { return; } const handler = setTimeout(() => { handleAutoSave(); }, 1500); return () => { clearTimeout(handler); }; }, [note, noteName, saveStatus, isInitialLoad]);
+  useEffect(() => { const loadInitialFiles = async () => { const files = await refreshFileList(); if (files.length > 0) { await handleOpenFile(files[0]); } setIsInitialLoad(false); }; loadInitialFiles(); }, [handleOpenFile, refreshFileList]);
+  useEffect(() => { if (isInitialLoad || saveStatus !== 'unsaved') { return undefined; } const handler = setTimeout(() => { handleAutoSave(); }, 1500); return () => { clearTimeout(handler); }; }, [handleAutoSave, isInitialLoad, note, noteName, saveStatus]);
   const handleNoteChange = (e) => { const newContent = e.target.value; if (!showBeautifyControls) { setNote(newContent); setSaveStatus('unsaved'); } };
   const handleNoteNameChange = (e) => { setNoteName(e.target.value); setSaveStatus('unsaved'); };
   useEffect(() => { const handleKeyDown = (e) => { const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0; const ctrlOrCmd = isMac ? e.metaKey : e.ctrlKey; const isTyping = ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName); if (isTyping && document.activeElement !== document.querySelector("textarea")) return; if (ctrlOrCmd && e.key === 'Enter') { e.preventDefault(); if (!isBeautifying && note.trim()) handleBeautify(false); } else if (ctrlOrCmd && e.key.toLowerCase() === 'p') { e.preventDefault(); if (!showBeautifyControls) setIsPreviewMode(prev => !prev); } else if (ctrlOrCmd && e.key.toLowerCase() === 'e') { e.preventDefault(); handleExportPdf(); } else if (ctrlOrCmd && e.key.toLowerCase() === 'k') { e.preventDefault(); handleNewNote(); } else if (ctrlOrCmd && e.key.toLowerCase() === 's') { e.preventDefault(); if(saveStatus === 'unsaved') handleAutoSave(); } else if (ctrlOrCmd && e.shiftKey && e.key.toLowerCase() === 'f') { e.preventDefault(); toggleFocusMode(); } else if (ctrlOrCmd && e.key.toLowerCase() === 'o') { e.preventDefault(); setShowFileModal(p => !p); } else if (ctrlOrCmd && e.key.toLowerCase() === '.') { setDropAnimationComplete(false); setIsEditorVisible(prev => !prev); } else if (ctrlOrCmd && e.key === '/') { setShowShortcutsModal(prev => !prev); } }; window.addEventListener('keydown', handleKeyDown); return () => window.removeEventListener('keydown', handleKeyDown); }, [note, isBeautifying, showBeautifyControls, saveStatus, handleBeautify, handleExportPdf, handleNewNote, handleAutoSave, toggleFocusMode, setShowShortcutsModal]);

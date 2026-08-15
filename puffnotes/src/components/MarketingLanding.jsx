@@ -38,13 +38,6 @@ const MarketingLanding = ({ onStartOffline, onStartOnline }) => {
         
         <WarmFooter />
       </div>
-      
-      {/* Smooth scroll behavior */}
-      <style jsx global>{`
-        html {
-          scroll-behavior: smooth;
-        }
-      `}</style>
     </div>
   );
 };

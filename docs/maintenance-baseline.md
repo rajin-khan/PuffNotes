@@ -20,21 +20,24 @@ dependency graph.
 
 ## Verified state
 
-- 473 exact package versions are locked; all passed the seven-day age gate.
-- 30 characterization tests pass.
-- ESLint exits successfully with zero errors. Fifteen existing exhaustive-hook
-  warnings remain intentionally unchanged because altering callback/dependency
-  behavior could affect autosave and keyboard shortcuts.
-- The production Vite build succeeds. Its main JavaScript chunk remains large
-  enough to trigger Vite's existing chunk-size warning.
-- The OSV report contains 39 matches across 15 transitive packages and no
-  direct-dependency matches, down from 96 matches across 22 packages.
+- 466 exact package versions are locked; all pass the seven-day age gate.
+- 32 characterization tests pass.
+- ESLint exits successfully with zero errors and zero warnings. Editor callbacks
+  are stable, and offline autosave retains its original note/name-only trigger
+  while reading the latest save context.
+- The production Vite build succeeds. Firebase and PDF export are on-demand
+  chunks; the initial JavaScript chunk fell from about 493 KB to 191 KB gzip.
+- The OSV report contains zero matches, down from the original 96 matches across
+  22 packages. Three compatible overrides enforce the seven-day rule for
+  fast-moving Browserslist data packages.
 - `html2pdf.js` is removed. jsPDF, Vite/PostCSS, React Router, and Firebase were
   upgraded separately, with the full verification command passing after every
   step.
 - Browser smoke tests cover `/welcome`, history navigation, unknown-route
   fallback, and Firebase app-shell initialization. No production data was
   written and no external sign-in was triggered.
+- Welcome and shortcut styling use normal CSS and no longer pass `jsx` or
+  `global` attributes into the DOM.
 - Local browser replay matched the saved landing and populated-editor
   accessibility DOM exactly. Onboarding matched after ignoring the expected
   focus marker on the clicked control. Video backgrounds make screenshot hashes

@@ -26,6 +26,7 @@ body {
 
 html {
   background-color: #181818;
+  scroll-behavior: smooth;
 }
 
 html:has([data-puffnotes-theme="warm"]) {

@@ -415,3 +415,34 @@ test('PDF export retains its page, render, and error contracts', async () => {
     assert.ok(source.includes(expected), `missing PDF contract: ${expected}`);
   }
 });
+
+test('Welcome styles use normal CSS without leaking framework props into the DOM', async () => {
+  const [marketing, shortcuts, styles] = await Promise.all([
+    readSource('src/components/MarketingLanding.jsx'),
+    readSource('src/components/KeyboardShortcutsModal.jsx'),
+    readSource('src/index.css'),
+  ]);
+
+  assert.doesNotMatch(marketing, /<style\s+jsx(?:\s+global)?/);
+  assert.doesNotMatch(shortcuts, /<style\s+jsx(?:\s+global)?/);
+  assert.ok(styles.includes('scroll-behavior: smooth'));
+});
+
+test('Firebase and PDF engines stay out of the initial application bundle', async () => {
+  const [app, offline, online, firebaseClient] = await Promise.all([
+    readSource('src/App.jsx'),
+    readSource('src/components/OfflineApp.jsx'),
+    readSource('src/components/OnlineApp.jsx'),
+    readSource('src/lib/firebase.js'),
+  ]);
+
+  assert.ok(app.includes("import('./lib/firebase')"));
+  assert.doesNotMatch(app, /from ['"]firebase\//);
+  assert.doesNotMatch(app, /from ['"]\.\/lib\/firebase['"]/);
+  assert.doesNotMatch(firebaseClient, /firebase\/firestore|getFirestore/);
+
+  for (const source of [offline, online]) {
+    assert.ok(source.includes("await import('../lib/exportNoteToPdf')"));
+    assert.doesNotMatch(source, /from ['"]\.\.\/lib\/exportNoteToPdf['"]/);
+  }
+});

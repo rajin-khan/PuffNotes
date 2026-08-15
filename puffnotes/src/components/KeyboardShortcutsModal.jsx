@@ -58,26 +58,6 @@ export default function KeyboardShortcutsModal({ isOpen, onClose, theme = THEMES
               })}
             </div>
 
-            {/* Updated styles for the code tags */}
-            <style jsx global>{`
-              .shortcuts-modal-content code {
-                display: inline-block;
-                background-color: ${theme === THEMES.GALAXY ? '#2d3561' : theme === THEMES.KOMOREBI ? '#44342a' : '#ffffff'};
-                padding: 4px 8px;
-                border-radius: 6px;
-                border: 1px solid ${theme === THEMES.GALAXY ? '#4a5178' : theme === THEMES.KOMOREBI ? '#685541' : '#d1d5db'};
-                box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
-                font-size: 0.85em;
-                color: ${theme === THEMES.GALAXY ? '#e8eaf6' : theme === THEMES.KOMOREBI ? '#f4ebd7' : '#374151'};
-                line-height: 1;
-                vertical-align: middle;
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-              }
-              .shortcuts-modal-content { display: none; }
-            `}</style>
-            {/* Add class to parent div to scope the style */}
-            <div className="shortcuts-modal-content hidden"></div>
-
             <button
               onClick={onClose}
               className={`mt-6 w-full text-center px-5 py-1.5 text-sm border rounded-full transition ${theme === THEMES.GALAXY ? 'bg-[#2d3561] border-[#4a5178] text-[#e8eaf6] hover:bg-[#9b59b6]' : 'bg-[#fff7ee] border-[#e0ddd5] text-gray-700 hover:bg-[#f0e9df]'}`}

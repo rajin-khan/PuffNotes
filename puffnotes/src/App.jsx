@@ -7,8 +7,6 @@ import OnlineApp from './components/OnlineApp';
 import LandingPage from './components/LandingPage';
 import MarketingLanding from './components/MarketingLanding';
 import OnlineSetupModal from './components/OnlineSetupModal';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth, signInWithGoogle, signOut } from './lib/firebase';
 import { findOrCreatePuffnotesFolder } from './lib/googleDrive';
 import { getStoredTheme } from './lib/themeManager';
 
@@ -26,19 +24,30 @@ export default function App() {
   ]);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if (currentUser) {
-        setUser(currentUser);
-      } else {
-        setUser(null);
-        setAccessToken(null);
-        setFolderId(null);
-        if (mode === 'online') {
-            setMode('landing');
+    if (mode !== 'online') return undefined;
+
+    let isActive = true;
+    let unsubscribe;
+    import('./lib/firebase').then(({ subscribeToAuthChanges }) => {
+      if (!isActive) return;
+      unsubscribe = subscribeToAuthChanges((currentUser) => {
+        if (currentUser) {
+          setUser(currentUser);
+        } else {
+          setUser(null);
+          setAccessToken(null);
+          setFolderId(null);
+          setMode('landing');
         }
-      }
+      });
+    }).catch((error) => {
+      console.error('Firebase initialization failed:', error);
     });
-    return () => unsubscribe();
+
+    return () => {
+      isActive = false;
+      unsubscribe?.();
+    };
   }, [mode]);
 
   const handleStartOffline = () => {
@@ -53,8 +62,10 @@ export default function App() {
         { label: 'Accessing Google Drive...', status: 'loading' },
         { label: 'Finding puffnotes folder...', status: 'loading' },
     ]);
+    let firebaseClient;
     try {
-      const { user, accessToken } = await signInWithGoogle();
+      firebaseClient = await import('./lib/firebase');
+      const { user, accessToken } = await firebaseClient.signInWithGoogle();
       if (!user || !accessToken) {
         setShowSetupModal(false);
         setIsOnlineLoading(false);
@@ -87,7 +98,10 @@ export default function App() {
     } catch (error) {
       console.error("Online setup failed:", error);
       alert(`Error during setup: ${error.message}`);
-      await signOut();
+      await firebaseClient?.signOut();
+      setUser(null);
+      setAccessToken(null);
+      setFolderId(null);
       setShowSetupModal(false);
       setIsOnlineLoading(false);
     }
@@ -95,6 +109,7 @@ export default function App() {
   
   const handleSignOut = async () => {
       try {
+          const { signOut } = await import('./lib/firebase');
           await signOut();
       } catch (error) {
           console.error("Sign out error", error);
