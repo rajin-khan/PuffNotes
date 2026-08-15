@@ -1,6 +1,6 @@
 # PuffNotes maintenance baseline
 
-Recorded: 2026-08-12
+Recorded: 2026-08-15
 
 ## Reproduce locally
 
@@ -20,13 +20,21 @@ dependency graph.
 
 ## Verified state
 
-- 472 exact package versions are locked; all passed the seven-day age gate.
-- 11 characterization tests pass.
+- 473 exact package versions are locked; all passed the seven-day age gate.
+- 30 characterization tests pass.
 - ESLint exits successfully with zero errors. Fifteen existing exhaustive-hook
   warnings remain intentionally unchanged because altering callback/dependency
   behavior could affect autosave and keyboard shortcuts.
 - The production Vite build succeeds. Its main JavaScript chunk remains large
   enough to trigger Vite's existing chunk-size warning.
+- The OSV report contains 39 matches across 15 transitive packages and no
+  direct-dependency matches, down from 96 matches across 22 packages.
+- `html2pdf.js` is removed. jsPDF, Vite/PostCSS, React Router, and Firebase were
+  upgraded separately, with the full verification command passing after every
+  step.
+- Browser smoke tests cover `/welcome`, history navigation, unknown-route
+  fallback, and Firebase app-shell initialization. No production data was
+  written and no external sign-in was triggered.
 - Local browser replay matched the saved landing and populated-editor
   accessibility DOM exactly. Onboarding matched after ignoring the expected
   focus marker on the clicked control. Video backgrounds make screenshot hashes
