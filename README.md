@@ -2,52 +2,49 @@
 
 <div align="center">
 
-# puffnotes  
-### *The coziest way to write notes — even if you barely write at all.*
+# puffnotes
+### *A cozy place for messy notes. ☁️*
 
-[![AI-Powered](https://img.shields.io/badge/✨_AI_Powered-blueviolet?style=for-the-badge&logo=sparkles)](https://groq.com/)  [![Google Drive Sync](https://img.shields.io/badge/☁️_Google_Drive_Sync-4285F4?style=for-the-badge&logo=google-drive)](https://www.google.com/drive/)  [![Offline First](https://img.shields.io/badge/💾_Offline_Ready-8ca7ff?style=for-the-badge&logo=database)]()
-[![MIT License](https://img.shields.io/badge/📄_MIT_License-green?style=for-the-badge&logo=opensourceinitiative)]()
-
----
-
-## 💭 What is puffnotes?
-
-**Puffnotes** transforms the way you capture and refine ideas. It's a beautifully minimal, dual-mode markdown editor that bridges the gap between scattered thoughts and polished content.
-
-> ✨ **Turn messy brain dumps into elegant, structured notes, with a single tap.**
-
-Designed for *creative minds, busy students, and thoughtful writers* who want their tools to be as intuitive as their thinking process. Whether you're online with full sync capabilities or working offline in complete privacy, Puffnotes adapts to your workflow.
+[![AI Powered](https://img.shields.io/badge/AI_Powered-blueviolet?style=for-the-badge&logo=sparkles)](https://groq.com/) [![Google Drive Sync](https://img.shields.io/badge/Google_Drive_Sync-4285F4?style=for-the-badge&logo=google-drive)](https://www.google.com/drive/) [![Offline Ready](https://img.shields.io/badge/Offline_Ready-8ca7ff?style=for-the-badge&logo=database)]() [![MIT License](https://img.shields.io/badge/MIT_License-green?style=for-the-badge&logo=opensourceinitiative)]()
 
 ---
 
-## 🎯 Choose Your Experience
+## What is puffnotes?
 
-Puffnotes respects how you work. Pick the mode that fits your needs:
+Puffnotes is a small Markdown editor for getting thoughts down before they disappear. Write the rough version first, then let AI clean up the structure when you want it to.
+
+> Dump the messy thoughts. Make them readable with one click.
+
+You can use it online with Google Drive sync or keep everything in a local folder. Both modes have the same editor, themes, Markdown preview, focus mode, and PDF export.
+
+---
+
+## Choose how you write
+
+Pick the mode that makes sense for the note:
 
 <table>
 <tr>
 <td width="50%">
 
-### ☁️ **Online Mode**
-*- Seamless & Connected*
+### Online mode
+*For notes you want everywhere*
 
-- **Auto-syncs** with Google Drive
-- Access from **any device, anywhere**
-- **Secure Google authentication**
-- Perfect for **multi-device workflows**
-- **Full feature access**
+- Syncs notes with Google Drive
+- Works across your signed-in devices
+- Uses Google authentication
+- Keeps the full Puffnotes editor and AI tools
 
 </td>
 <td width="50%">
 
-### 💻 **Offline Mode** 
-*- Private & Lightning Fast*
+### Offline mode
+*For notes you want on your computer*
 
-- **Complete privacy** - nothing leaves your device
-- **Zero latency** - instant everything
-- **No accounts** or sign-ups required
-- **Local-first** storage
-- Works in any **Chromium browser**
+- Saves straight to a folder you choose
+- No account or sign-up
+- Nothing is uploaded for storage
+- Works in Chromium browsers with folder access
 
 </td>
 </tr>
@@ -55,96 +52,98 @@ Puffnotes respects how you work. Pick the mode that fits your needs:
 
 ---
 
-## ✨ Experience the Magic
+## What it does
 
-### 🪄 **AI-Powered Beautification**
-Transform rough ideas into polished prose instantly. Our AI understands context, improves structure, and maintains your unique voice while making everything more readable and professional.
+### AI cleanup ✨
+
+Write the bad first draft. Puffnotes can turn it into a clearer, structured Markdown note without making you organize every thought as it arrives.
 
 https://github.com/user-attachments/assets/4670cd02-0994-4fdb-afe1-f4c57136e1a4
 
-### 📝 **Effortless Markdown + Live Preview**
-Write in clean, intuitive Markdown syntax. Toggle between editing and preview modes to see your beautifully formatted content come to life in real-time.
+### Markdown and live preview
+
+Write in Markdown, then switch to Preview whenever you want to see the formatted note.
 
 https://github.com/user-attachments/assets/2fb401fb-c1dd-47a8-b3ab-1f1f00c4d563
 
-### 🧘 **Distraction-Free Focus Mode**
-When it's time to think deeply, everything else fades away. Enter a zen-like state where only your words and a calming background remain, helping you achieve true flow.
+### Focus mode
+
+Tuck the editor controls away and leave the note on screen. Useful when the buttons start feeling louder than the words.
 
 https://github.com/user-attachments/assets/951a4cff-ff21-4b4b-a9a6-f10277c7ea84
 
-### 📄 **Professional PDF Export**
-Share your work with confidence. Export any note as a clean, professionally formatted PDF that preserves all styling and looks great in print or digital form.
+### PDF export
+
+Export a note as a styled PDF. Markdown formatting, page breaks, and the selected Puffnotes theme carry into the file.
 
 https://github.com/user-attachments/assets/87ff217b-17ee-40f7-96e8-a5d7605e3ef0
 
-### 🔑 **Unlimited AI with Your Own Key**
-While our shared AI has daily limits, you can unlock unlimited power by adding your own free Groq API key. It's secure, private, and gives you complete control.
+### Bring your own Groq key
+
+The shared AI key has daily limits. You can add a free Groq API key in Settings if you want your own allowance. Puffnotes keeps it in your browser and sends requests directly to Groq.
 
 https://github.com/user-attachments/assets/78cfc0b5-96cf-47b4-9ce6-c689f98be699
 
 ---
 
-## 🎨 Perfect For
+## Who is it for?
 
 <div align="center">
 
-| 🎓 **Students** | ✍️ **Writers** | 💻 **Developers** | 🌙 **Night Thinkers** |
+| Students | Writers | Developers | 2 AM thinkers |
 |:---:|:---:|:---:|:---:|
-| Structure lecture notes effortlessly | Distraction-free writing sanctuary | Markdown-native documentation | Quick thought capture |
-| AI helps organize study materials | Expand ideas with intelligent assistance | Flexible online/offline modes | No friction, just flow |
+| Clean up lecture notes | Get the rough idea out first | Keep Markdown-native notes | Catch a thought before it leaves |
+| Organize study material | Write without a crowded interface | Choose local files or Drive | Fix the structure tomorrow |
 
 </div>
 
 ---
 
-## 🏁 Getting Started
+## Getting started
 
 <div align="center">
 
-**It's beautifully simple:**
+Open Puffnotes, choose Online or Offline, and start typing.
 
-**1.** Visit the app → **2.** Pick your mode → **3.** Start writing → **4.** Hit ✨ to beautify → **5.** Autosave handles the rest
+Use the ✨ button when the note needs cleaning up. Autosave handles the rest.
 
-*No tutorials needed. No complexity. Just pure, magical simplicity.*
+No tutorial required. It is a notes app. You know what to do.
 
 </div>
 
 ---
 
-## 🔮 Roadmap
+## Roadmap
 
-The journey toward the perfect thinking tool:
+Puffnotes is still growing, but I would rather add useful things slowly than turn it into a dashboard with seventeen sidebars.
 
-| Feature                                                                                    | Status      |
-|--------------------------------------------------------------------------------------------|-------------|
-| ✅ AI-powered content enhancement                                                          | Completed   |
-| ✅ Professional PDF export                                                                 | Completed   |
-| ✅ Google Drive synchronization                                                            | Completed   |
-| ✅ Offline-first architecture                                                              | Completed   |
-| ⏳ Beautiful themes                                                                        | In Progress |
-| ⏳ Custom AI prompts                                                                       | Planning    |
-| ⏳ Drag-and-drop images                                                                    | Planning    |
-| ⏳ Smart organization                                                                      | Planning    |
-| ⏳ Mobile companion app                                                                    | Planning    |
-| ⏳ Integration ecosystem with your favorite tools (Import from Notion, Obsidian, and more) | Planning    |
+| Feature | Status |
+|---|---|
+| AI note cleanup | Complete |
+| PDF export | Complete |
+| Google Drive sync | Complete |
+| Offline folder storage | Complete |
+| Warm, Galaxy, and Komorebi themes | Complete |
+| Custom AI prompts | Planning |
+| Drag-and-drop images | Planning |
+| Better note organization | Planning |
+| Mobile companion app | Planning |
+| Imports from tools such as Notion and Obsidian | Planning |
 
 ---
 
-## **👨‍💻 Dev Team**
+## Dev team
 
 Just me, actually.
 
-| Name                      | Institution             | ID | GitHub | Followers |
-|---------------------------|-------------------------|--  |--------|------|
-| **Rajin Khan**            | North South University | 2212708042 | [![Rajin's GitHub](https://img.shields.io/badge/-rajin--khan-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/rajin-khan) | ![Followers](https://img.shields.io/github/followers/rajin-khan?label=Follow&style=social) |
+| Name | Institution | ID | GitHub | Followers |
+|---|---|---|---|---|
+| **Rajin Khan** | North South University | 2212708042 | [![Rajin's GitHub](https://img.shields.io/badge/-rajin--khan-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/rajin-khan) | ![Followers](https://img.shields.io/github/followers/rajin-khan?label=Follow&style=social) |
 
 ---
 
-I believe that **good tools disappear**. They don't demand attention or force you into rigid workflows. Instead, they amplify your natural thinking process, making you more creative and productive without getting in the way.
-That's what puffnotes is meant to be.
+I like tools that get out of the way. Puffnotes is my attempt at making one.
 
-### ⭐ **Star this repo if you want more cool stuff like this!**
-
----
+### ⭐ Star the repo if you want to see where it goes.
 
 </div>
