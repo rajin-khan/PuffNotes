@@ -428,6 +428,53 @@ test('Welcome styles use normal CSS without leaking framework props into the DOM
   assert.ok(styles.includes('scroll-behavior: smooth'));
 });
 
+test('public pages expose crawl, canonical, social, and app metadata', async () => {
+  const [index, app, pageMetadata, robots, sitemap, manifestSource] = await Promise.all([
+    readSource('index.html'),
+    readSource('src/App.jsx'),
+    readSource('src/components/PageMetadata.jsx'),
+    readSource('public/robots.txt'),
+    readSource('public/sitemap.xml'),
+    readSource('public/site.webmanifest'),
+  ]);
+
+  assertIncludesAll(index, [
+    '<meta\n      name="description"',
+    'name="robots"',
+    '<link rel="canonical" href="https://puff-notes.vercel.app/" />',
+    '<meta property="og:site_name" content="Puffnotes" />',
+    '<meta property="og:image:alt" content="Puffnotes, your quiet place to write" />',
+    '<meta name="twitter:image:alt" content="Puffnotes, your quiet place to write" />',
+    '<script type="application/ld+json">',
+    '"@type": "WebApplication"',
+    '<link rel="manifest" href="/site.webmanifest" />',
+  ], 'static SEO metadata');
+
+  assert.ok(
+    index.includes('https://puff-notes.vercel.app/previewaltl.png'),
+    'the approved live social image must remain unchanged',
+  );
+  assert.ok(app.includes('<PageMetadata />'));
+  assertIncludesAll(pageMetadata, [
+    "'/welcome'",
+    "title: 'Puffnotes | Write first. Clean it up later.'",
+    "title: 'Puffnotes | A cozy place for messy notes'",
+    'link[rel="canonical"]',
+    'meta[property="og:url"]',
+  ], 'route metadata');
+
+  assert.ok(robots.includes('Sitemap: https://puff-notes.vercel.app/sitemap.xml'));
+  assertIncludesAll(sitemap, [
+    '<loc>https://puff-notes.vercel.app/</loc>',
+    '<loc>https://puff-notes.vercel.app/welcome</loc>',
+  ], 'sitemap route');
+
+  const manifest = JSON.parse(manifestSource);
+  assert.equal(manifest.name, 'Puffnotes');
+  assert.equal(manifest.start_url, '/');
+  assert.equal(manifest.icons.length, 2);
+});
+
 test('Firebase and PDF engines stay out of the initial application bundle', async () => {
   const [app, offline, online, firebaseClient] = await Promise.all([
     readSource('src/App.jsx'),

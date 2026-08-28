@@ -1,0 +1,22 @@
+{
+  "name": "Puffnotes",
+  "short_name": "Puffnotes",
+  "description": "A cozy place for messy notes.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#17191b",
+  "theme_color": "#17191b",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "64x64",
+      "type": "image/png"
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-![Puffnotes Banner](./docs/puffnotesbanneralt.png)
+![Puffnotes Banner](./docs/puffnotesbanner.png)
 
 <div align="center">
 
@@ -19,7 +19,7 @@ You can use it online with Google Drive sync or keep everything in a local folde
 
 ---
 
-## Choose how you write
+## ✍️ Choose how you write
 
 Pick the mode that makes sense for the note:
 
@@ -27,7 +27,7 @@ Pick the mode that makes sense for the note:
 <tr>
 <td width="50%">
 
-### Online mode
+### ☁️ Online mode
 *For notes you want everywhere*
 
 - Syncs notes with Google Drive
@@ -38,7 +38,7 @@ Pick the mode that makes sense for the note:
 </td>
 <td width="50%">
 
-### Offline mode
+### 💻 Offline mode
 *For notes you want on your computer*
 
 - Saves straight to a folder you choose
@@ -99,13 +99,13 @@ https://github.com/user-attachments/assets/78cfc0b5-96cf-47b4-9ce6-c689f98be699
 
 ---
 
-## Getting started
+## 🚀 Getting started
 
 <div align="center">
 
-Open Puffnotes, choose Online or Offline, and start typing.
+🌐 Open Puffnotes and choose Online or Offline.
 
-Use the ✨ button when the note needs cleaning up. Autosave handles the rest.
+📝 Start typing. Use the ✨ button when the note needs cleaning up. Autosave handles the rest. 💾
 
 No tutorial required. It is a notes app. You know what to do.
 
@@ -119,16 +119,16 @@ Puffnotes is still growing, but I would rather add useful things slowly than tur
 
 | Feature | Status |
 |---|---|
-| AI note cleanup | Complete |
-| PDF export | Complete |
-| Google Drive sync | Complete |
-| Offline folder storage | Complete |
-| Warm, Galaxy, and Komorebi themes | Complete |
-| Custom AI prompts | Planning |
-| Drag-and-drop images | Planning |
-| Better note organization | Planning |
-| Mobile companion app | Planning |
-| Imports from tools such as Notion and Obsidian | Planning |
+| ✨ AI note cleanup | ✅ Complete |
+| 📄 PDF export | ✅ Complete |
+| ☁️ Google Drive sync | ✅ Complete |
+| 💾 Offline folder storage | ✅ Complete |
+| 🎨 Warm, Galaxy, and Komorebi themes | ✅ Complete |
+| 🪄 Custom AI prompts | ⏳ Planning |
+| 🖼️ Drag-and-drop images | ⏳ Planning |
+| 🗂️ Better note organization | ⏳ Planning |
+| 📱 Mobile companion app | ⏳ Planning |
+| 🔄 Imports from tools such as Notion and Obsidian | ⏳ Planning |
 
 ---
 

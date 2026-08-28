@@ -7,6 +7,7 @@ import OnlineApp from './components/OnlineApp';
 import LandingPage from './components/LandingPage';
 import MarketingLanding from './components/MarketingLanding';
 import OnlineSetupModal from './components/OnlineSetupModal';
+import PageMetadata from './components/PageMetadata';
 import { findOrCreatePuffnotesFolder } from './lib/googleDrive';
 import { getStoredTheme } from './lib/themeManager';
 
@@ -151,6 +152,7 @@ export default function App() {
 
   return (
     <Router>
+      <PageMetadata />
       <AnimatePresence>
         {showSetupModal && (
           <OnlineSetupModal
