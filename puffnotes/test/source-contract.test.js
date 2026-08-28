@@ -451,9 +451,16 @@ test('public pages expose crawl, canonical, social, and app metadata', async () 
   ], 'static SEO metadata');
 
   assert.ok(
-    index.includes('https://puff-notes.vercel.app/previewaltl.png'),
-    'the approved live social image must remain unchanged',
+    index.includes('https://puff-notes.vercel.app/puffnotes-og-v2.png'),
+    'the approved social image must remain wired to every social card',
   );
+  assert.equal(
+    index.match(/https:\/\/puff-notes\.vercel\.app\/puffnotes-og-v2\.png/g)?.length,
+    3,
+    'Open Graph, secure Open Graph, and Twitter cards must share the approved image',
+  );
+  assert.ok(index.includes('<meta property="og:image:width" content="1200" />'));
+  assert.ok(index.includes('<meta property="og:image:height" content="630" />'));
   assert.ok(app.includes('<PageMetadata />'));
   assertIncludesAll(pageMetadata, [
     "'/welcome'",
