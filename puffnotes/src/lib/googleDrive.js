@@ -3,6 +3,20 @@
 const FOLDER_NAME = 'puffnotes';
 const FOLDER_MIME_TYPE = 'application/vnd.google-apps.folder';
 
+// Use Drive trash, not permanent deletion, so online notes can be restored.
+export async function trashNote(accessToken, fileId) {
+  if (!fileId) throw new Error('No note selected.');
+  const response = await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ trashed: true }),
+  });
+  if (!response.ok) throw new Error('Could not move the note to Google Drive trash. Please try again.');
+}
+
 /**
  * Finds or creates the dedicated "puffnotes" folder in the user's Google Drive.
  * @param {string} accessToken The user's OAuth2 access token.

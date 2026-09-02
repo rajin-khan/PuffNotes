@@ -1,10 +1,11 @@
 // src/components/OnlineApp.jsx
 import { useCallback, useState, useEffect, useRef } from 'react';
 import {
-  FilePlus, FolderOpen, ChevronDown, ChevronUp, X, Wand2, Check,
+  Trash2, FilePlus, FolderOpen, ChevronDown, ChevronUp, X, Wand2, Check,
   RotateCw, XCircle, CheckCircle, Info, KeyRound, Eye, Pen,
   Keyboard, LogOut, AlertTriangle, Loader2, Home, HelpCircle, Settings
 } from 'lucide-react';
+import { createNoteOperations } from '../lib/noteOperations';
 import { runBeautifyWorkflow } from '../lib/beautifyWorkflow';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import MarkdownPreview from './MarkdownPreview';
@@ -15,7 +16,7 @@ import SettingsModal from './SettingsModal';
 import { ModalPresence } from './ModalMotion';
 import ThemeBackground from './ThemeBackground';
 import { THEMES, getStoredTheme, setStoredTheme } from '../lib/themeManager';
-import { listNotes, getNoteContent, saveNoteContent } from '../lib/googleDrive';
+import { listNotes, getNoteContent, saveNoteContent, trashNote } from '../lib/googleDrive';
 
 const USER_API_KEY_STORAGE_KEY = 'puffnotes_groqUserApiKey_v1';
 const DEFAULT_GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || '';
@@ -93,6 +94,8 @@ export default function OnlineApp({ user: _user, accessToken, folderId, onSignOu
   const [isLoadingNote, setIsLoadingNote] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const noteContentRef = useRef(note);
+  const operationsRef = useRef(createNoteOperations());
+  const [deletingNote, setDeletingNote] = useState(null);
   const isLoadingNoteRef = useRef(false);
   const hasCoveringModal = showSettingsModal || showShortcutsModal || showOnboarding || showFileModal;
 
@@ -121,16 +124,42 @@ export default function OnlineApp({ user: _user, accessToken, folderId, onSignOu
   };
   
   useEffect(() => { noteContentRef.current = note; }, [note]);
-  const refreshFileList = useCallback(async () => { try { const files = await listNotes(accessToken, folderId); setFileList(files || []); return files; } catch (err) { console.error("Failed to refresh file list:", err); setFileList([]); return []; } }, [accessToken, folderId]);
-  const handleOpenFile = useCallback(async (file) => { if (!file || isLoadingNoteRef.current) return; isLoadingNoteRef.current = true; setIsLoadingNote(true); setShowFileModal(false); try { const content = await getNoteContent(accessToken, file.id); const baseName = file.name.replace(/\.md$/, ""); setNote(content); noteContentRef.current = content; setNoteName(baseName); setActiveNoteId(file.id); setPreviewNote(""); setShowBeautifyControls(false); setOriginalNote(""); setIsPreviewMode(false); setSaveStatus('saved'); } catch (err) { console.error("Error opening file:", err); alert(`Failed to open file: ${file.name}. Error: ${err.message}`); } finally { isLoadingNoteRef.current = false; setIsLoadingNote(false); } }, [accessToken]);
-  const handleNewNote = useCallback(() => { if (saveStatus === 'saving') return; setNote(""); noteContentRef.current = ""; setNoteName("untitled"); setActiveNoteId(null); setPreviewNote(""); setShowBeautifyControls(false); setOriginalNote(""); setIsPreviewMode(false); setSaveStatus('unsaved'); }, [saveStatus]);
-  const handleAutoSave = useCallback(async (isNewNote = false) => { if (!noteName.trim()) { if (isNewNote) alert("Please name your note before saving."); return; } setSaveStatus('saving'); try { const savedFile = await saveNoteContent(accessToken, folderId, noteContentRef.current, activeNoteId, noteName); if (!activeNoteId) { setActiveNoteId(savedFile.id); } await refreshFileList(); setSaveStatus('saved'); } catch (err) { console.error("Autosave failed:", err); setSaveStatus('unsaved'); alert(`Failed to save note: ${err.message}`); } }, [accessToken, activeNoteId, folderId, noteName, refreshFileList]);
-  const handleBeautify = useCallback(async (isRegeneration = false) => runBeautifyWorkflow({
+  const refreshFileList = useCallback(async () => operationsRef.current.run(async () => { try { const files = await listNotes(accessToken, folderId); setFileList(files || []); return files; } catch (err) { console.error("Failed to refresh file list:", err); setFileList([]); return []; } }), [accessToken, folderId]);
+  const handleOpenFile = useCallback(async (file) => operationsRef.current.run(async () => { if (!file || isLoadingNoteRef.current) return; isLoadingNoteRef.current = true; setIsLoadingNote(true); setShowFileModal(false); try { const content = await getNoteContent(accessToken, file.id); const baseName = file.name.replace(/\.md$/, ""); setNote(content); noteContentRef.current = content; setNoteName(baseName); setActiveNoteId(file.id); setPreviewNote(""); setShowBeautifyControls(false); setOriginalNote(""); setIsPreviewMode(false); setSaveStatus('saved'); } catch (err) { console.error("Error opening file:", err); alert(`Failed to open file: ${file.name}. Error: ${err.message}`); } finally { isLoadingNoteRef.current = false; setIsLoadingNote(false); } }), [accessToken]);
+  const handleNewNote = useCallback(() => { if (operationsRef.current.deleting) return; if (saveStatus === 'saving') return; setNote(""); noteContentRef.current = ""; setNoteName("untitled"); setActiveNoteId(null); setPreviewNote(""); setShowBeautifyControls(false); setOriginalNote(""); setIsPreviewMode(false); setSaveStatus('unsaved'); }, [saveStatus]);
+  const handleAutoSave = useCallback(async (isNewNote = false) => operationsRef.current.run(async () => { if (!noteName.trim()) { if (isNewNote) alert("Please name your note before saving."); return; } setSaveStatus('saving'); try { const savedFile = await saveNoteContent(accessToken, folderId, noteContentRef.current, activeNoteId, noteName); if (!activeNoteId) { setActiveNoteId(savedFile.id); } await refreshFileList(); setSaveStatus('saved'); } catch (err) { console.error("Autosave failed:", err); setSaveStatus('unsaved'); alert(`Failed to save note: ${err.message}`); } }), [accessToken, activeNoteId, folderId, noteName, refreshFileList]);
+
+  const handleDeleteNote = async (file) => {
+    if (operationsRef.current.busy) {
+      alert('Please wait for the current save, file load, or AI request to finish, then try again.');
+      return;
+    }
+    if (!window.confirm(`Move "${file.name}" to Google Drive trash? You can restore it from Drive.`)) return;
+    try {
+      await operationsRef.current.remove(async () => {
+        setDeletingNote(file.id);
+        await trashNote(accessToken, file.id);
+        if (activeNoteId === file.id) {
+          operationsRef.current.invalidate();
+          setNote(''); noteContentRef.current = ''; setNoteName('untitled'); setActiveNoteId(null);
+          setPreviewNote(''); setOriginalNote(''); setShowBeautifyControls(false); setIsPreviewMode(false);
+          setSaveStatus('saved');
+        }
+        setFileList(files => files.filter(item => item.id !== file.id));
+      });
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      setDeletingNote(null);
+    }
+  };
+
+  const handleBeautify = useCallback(async (isRegeneration = false) => operationsRef.current.run(() => runBeautifyWorkflow({
     isRegeneration, originalNote, note, userApiKey, defaultApiKey: DEFAULT_GROQ_API_KEY,
     apiKeyInputRef, setApiKeyError, setApiKeySaveFeedback, setIsBeautifying,
     setIsPreviewMode, setOriginalNote, setPreviewNote, setShowBeautifyControls,
     setShowSettingsModal,
-  }), [note, originalNote, userApiKey]);
+  })), [note, originalNote, userApiKey]);
   const acceptBeautified = () => { setNote(previewNote); setPreviewNote(""); setOriginalNote(""); setShowBeautifyControls(false); setIsPreviewMode(false); setSaveStatus('unsaved'); };
   const rejectBeautified = () => { setPreviewNote(""); setShowBeautifyControls(false); setIsPreviewMode(false); };
   const regenerateBeautified = () => { handleBeautify(true); };
@@ -145,10 +174,10 @@ export default function OnlineApp({ user: _user, accessToken, folderId, onSignOu
   const toggleFocusMode = useCallback(() => setFocusMode(prev => !prev), []);
   const togglePreviewMode = () => { if (!showBeautifyControls) setIsPreviewMode(prev => !prev); };
   useEffect(() => { const loadInitialFiles = async () => { const files = await refreshFileList(); if (files.length > 0) { await handleOpenFile(files[0]); } setIsInitialLoad(false); }; loadInitialFiles(); }, [handleOpenFile, refreshFileList]);
-  useEffect(() => { if (isInitialLoad || saveStatus !== 'unsaved') { return undefined; } const handler = setTimeout(() => { handleAutoSave(); }, 1500); return () => { clearTimeout(handler); }; }, [handleAutoSave, isInitialLoad, note, noteName, saveStatus]);
+  useEffect(() => { if (deletingNote || isInitialLoad || saveStatus !== 'unsaved') { return undefined; } const revision = operationsRef.current.revision; const handler = setTimeout(() => { if (revision === operationsRef.current.revision) handleAutoSave(); }, 1500); return () => { clearTimeout(handler); }; }, [deletingNote, handleAutoSave, isInitialLoad, note, noteName, saveStatus]);
   const handleNoteChange = (e) => { const newContent = e.target.value; if (!showBeautifyControls) { setNote(newContent); setSaveStatus('unsaved'); } };
   const handleNoteNameChange = (e) => { setNoteName(e.target.value); setSaveStatus('unsaved'); };
-  useEffect(() => { const handleKeyDown = (e) => { const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0; const ctrlOrCmd = isMac ? e.metaKey : e.ctrlKey; const isTyping = ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName); if (isTyping && document.activeElement !== document.querySelector("textarea")) return; if (ctrlOrCmd && e.key === 'Enter') { e.preventDefault(); if (!isBeautifying && note.trim()) handleBeautify(false); } else if (ctrlOrCmd && e.key.toLowerCase() === 'p') { e.preventDefault(); if (!showBeautifyControls) setIsPreviewMode(prev => !prev); } else if (ctrlOrCmd && e.key.toLowerCase() === 'e') { e.preventDefault(); handleExportPdf(); } else if (ctrlOrCmd && e.key.toLowerCase() === 'k') { e.preventDefault(); handleNewNote(); } else if (ctrlOrCmd && e.key.toLowerCase() === 's') { e.preventDefault(); if(saveStatus === 'unsaved') handleAutoSave(); } else if (ctrlOrCmd && e.shiftKey && e.key.toLowerCase() === 'f') { e.preventDefault(); toggleFocusMode(); } else if (ctrlOrCmd && e.key.toLowerCase() === 'o') { e.preventDefault(); setShowFileModal(p => !p); } else if (ctrlOrCmd && e.key.toLowerCase() === '.') { setDropAnimationComplete(false); setIsEditorVisible(prev => !prev); } else if (ctrlOrCmd && e.key === '/') { setShowShortcutsModal(prev => !prev); } }; window.addEventListener('keydown', handleKeyDown); return () => window.removeEventListener('keydown', handleKeyDown); }, [note, isBeautifying, showBeautifyControls, saveStatus, handleBeautify, handleExportPdf, handleNewNote, handleAutoSave, toggleFocusMode, setShowShortcutsModal]);
+  useEffect(() => { const handleKeyDown = (e) => { if (operationsRef.current.deleting) { e.preventDefault(); return; } const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0; const ctrlOrCmd = isMac ? e.metaKey : e.ctrlKey; const isTyping = ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName); if (isTyping && document.activeElement !== document.querySelector("textarea")) return; if (ctrlOrCmd && e.key === 'Enter') { e.preventDefault(); if (!isBeautifying && note.trim()) handleBeautify(false); } else if (ctrlOrCmd && e.key.toLowerCase() === 'p') { e.preventDefault(); if (!showBeautifyControls) setIsPreviewMode(prev => !prev); } else if (ctrlOrCmd && e.key.toLowerCase() === 'e') { e.preventDefault(); handleExportPdf(); } else if (ctrlOrCmd && e.key.toLowerCase() === 'k') { e.preventDefault(); handleNewNote(); } else if (ctrlOrCmd && e.key.toLowerCase() === 's') { e.preventDefault(); if(saveStatus === 'unsaved') handleAutoSave(); } else if (ctrlOrCmd && e.shiftKey && e.key.toLowerCase() === 'f') { e.preventDefault(); toggleFocusMode(); } else if (ctrlOrCmd && e.key.toLowerCase() === 'o') { e.preventDefault(); setShowFileModal(p => !p); } else if (ctrlOrCmd && e.key.toLowerCase() === '.') { setDropAnimationComplete(false); setIsEditorVisible(prev => !prev); } else if (ctrlOrCmd && e.key === '/') { setShowShortcutsModal(prev => !prev); } }; window.addEventListener('keydown', handleKeyDown); return () => window.removeEventListener('keydown', handleKeyDown); }, [note, isBeautifying, showBeautifyControls, saveStatus, handleBeautify, handleExportPdf, handleNewNote, handleAutoSave, toggleFocusMode, setShowShortcutsModal]);
 
   return (
     <>
@@ -248,23 +277,32 @@ export default function OnlineApp({ user: _user, accessToken, folderId, onSignOu
           isOpen={showFileModal}
           kind="notes"
           theme={currentTheme}
-          onBackdropClick={() => setShowFileModal(false)}
+          onBackdropClick={() => { if (!operationsRef.current.deleting) setShowFileModal(false); }}
           panelClassName={`rounded-xl shadow-xl w-full max-w-xs max-h-[60vh] overflow-y-auto p-4 ${currentTheme === THEMES.GALAXY ? 'bg-[#0f1642] border border-[#2d3561]' : 'bg-white border border-[#e6ddcc]'}`}
         >
           <div className="flex justify-between items-center mb-3">
             <h2 className={`font-serif text-lg ${currentTheme === THEMES.GALAXY ? 'text-[#e8eaf6]' : 'text-gray-800'}`}>Your Notes</h2>
-            <motion.button onClick={() => setShowFileModal(false)} className={`${currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3] hover:text-[#e8eaf6]' : 'text-gray-500 hover:text-gray-800'}`} title="Close" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+            <motion.button onClick={() => { if (!operationsRef.current.deleting) setShowFileModal(false); }} className={`${currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3] hover:text-[#e8eaf6]' : 'text-gray-500 hover:text-gray-800'}`} title="Close" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
               <X size={18} />
             </motion.button>
           </div>
+          {deletingNote && <p role="status" className="px-2 py-1 text-xs opacity-60">Deleting note…</p>}
           {fileList.length === 0 ? (
             <p className={`text-sm italic px-2 py-1 ${currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3]' : 'text-gray-500'}`}>No notes found in your Google Drive's "puffnotes" folder.</p>
           ) : (
             <div className="space-y-1">
               {fileList.map((file, index) => (
-                <motion.button key={file.id} onClick={() => handleOpenFile(file)} className={`block w-full text-left text-sm font-mono px-2 py-1.5 rounded transition-colors duration-100 ${activeNoteId === file.id ? (currentTheme === THEMES.GALAXY ? 'text-[#f39c12]' : 'text-orange-400') : (currentTheme === THEMES.GALAXY ? 'text-[#e8eaf6] hover:bg-[#2d3561]' : 'text-[#333] hover:bg-[#f8f6f2]')}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.03 }} whileHover={{ x: 3 }} title={`Open ${file.name}`}>
+                <div key={file.id} className="flex items-center gap-1">
+                <motion.button disabled={Boolean(deletingNote)} onClick={() => handleOpenFile(file)} className={`block min-w-0 flex-1 break-words w-full text-left text-sm font-mono px-2 py-1.5 rounded transition-colors duration-100 ${activeNoteId === file.id ? (currentTheme === THEMES.GALAXY ? 'text-[#f39c12]' : 'text-orange-400') : (currentTheme === THEMES.GALAXY ? 'text-[#e8eaf6] hover:bg-[#2d3561]' : 'text-[#333] hover:bg-[#f8f6f2]')}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.03 }} whileHover={{ x: 3 }} title={`Open ${file.name}`}>
                   {file.name.replace(/\.md$/, "")}
                 </motion.button>
+                <button type="button" onClick={() => handleDeleteNote(file)}
+                  disabled={Boolean(deletingNote)} aria-label={`Delete ${file.name}`}
+                  title={`Delete ${file.name}`}
+                  className={`shrink-0 rounded p-2 opacity-60 hover:opacity-100 hover:text-red-500 focus-visible:opacity-100 disabled:opacity-30 ${currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3]' : 'text-gray-500'}`}>
+                  <Trash2 size={15} aria-hidden="true" />
+                </button>
+                </div>
               ))}
             </div>
           )}
@@ -311,7 +349,7 @@ export default function OnlineApp({ user: _user, accessToken, folderId, onSignOu
                ) : isPreviewMode && !showBeautifyControls ? (
                   <MarkdownPreview markdownText={note} theme={currentTheme} />
                ) : (
-                  <textarea value={showBeautifyControls ? previewNote : note} onChange={handleNoteChange} placeholder="A quiet place to write..." className={`w-full h-full font-mono text-sm bg-transparent resize-none outline-none leading-relaxed placeholder:italic transition-all duration-300 ${focusMode ? 'text-base px-2' : 'text-sm'} [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${currentTheme === THEMES.GALAXY ? 'text-[#e8eaf6] placeholder:text-[#6c7b95]' : 'text-gray-800 placeholder:text-gray-400'}`} readOnly={isBeautifying || showBeautifyControls} />
+                  <textarea value={showBeautifyControls ? previewNote : note} onChange={handleNoteChange} placeholder="A quiet place to write..." className={`w-full h-full font-mono text-sm bg-transparent resize-none outline-none leading-relaxed placeholder:italic transition-all duration-300 ${focusMode ? 'text-base px-2' : 'text-sm'} [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${currentTheme === THEMES.GALAXY ? 'text-[#e8eaf6] placeholder:text-[#6c7b95]' : 'text-gray-800 placeholder:text-gray-400'}`} readOnly={Boolean(deletingNote) || isBeautifying || showBeautifyControls} />
                )}
             </div>
              <AnimatePresence>
