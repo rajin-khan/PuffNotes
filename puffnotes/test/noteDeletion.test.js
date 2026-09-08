@@ -31,10 +31,11 @@ for (const mode of ['Offline', 'Online']) {
       alert: message => alerts.push(message),
       deleteNote: async () => { calls += 1; return !fail; },
       trashNote: async () => { calls += 1; if (fail) throw new Error('permission denied'); },
+      createHandwritingDocument: () => ({ version: 1, pages: [{ id: 'new', strokes: [] }] }),
     };
     for (const name of ['DeletingNote', 'Note', 'NoteName', 'ActiveNoteId', 'ActiveFileName',
       'IsFirstSave', 'PreviewNote', 'OriginalNote', 'ShowBeautifyControls', 'IsPreviewMode',
-      'SaveStatus', 'FileList']) {
+      'SaveStatus', 'FileList', 'Handwriting', 'HandwritingFileId', 'EditorPage']) {
       const key = name[0].toLowerCase() + name.slice(1);
       context[`set${name}`] = value => { state[key] = typeof value === 'function' ? value(state[key]) : value; };
     }

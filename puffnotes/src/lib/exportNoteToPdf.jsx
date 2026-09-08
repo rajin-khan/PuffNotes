@@ -3,6 +3,7 @@ import jsPDF from 'jspdf';
 import * as ReactDOM from 'react-dom/client';
 
 import MarkdownPreview from '../components/MarkdownPreview';
+import { handwritingPageDataUrl, nonEmptyHandwritingPages } from './handwriting.js';
 import { findWhitespacePageBreak, isInkFreeRow } from './pdfPagination.js';
 import { THEMES } from './themeManager';
 
@@ -15,11 +16,15 @@ const parseRgbColor = (color) => {
 export async function exportNoteToPdf({
   contentToExport,
   currentTheme,
+  handwriting,
   isExportingPdf,
   noteName,
   setIsExportingPdf,
+  showWritingLines = false,
 }) {
-  if (!contentToExport.trim() || isExportingPdf) return;
+  const hasText = Boolean(contentToExport.trim());
+  const handwritingPages = nonEmptyHandwritingPages(handwriting);
+  if ((!hasText && !handwritingPages.length) || isExportingPdf) return;
   setIsExportingPdf(true);
 
   const filename = (noteName.trim() || 'untitled') + '.pdf';
@@ -74,6 +79,8 @@ export async function exportNoteToPdf({
   await new Promise((resolve) => setTimeout(resolve, 500));
 
   try {
+    if (hasText) {
+    try {
     const selectorsAndColors = isGalaxyTheme ? [
       { selector: '.text-\\[\\#e8eaf6\\]', color: '#e8eaf6' },
       { selector: '.text-\\[\\#b8bfde\\]', color: '#b8bfde' },
@@ -131,7 +138,6 @@ export async function exportNoteToPdf({
       .map((element) => getComputedStyle(element).color),
   )].map(parseRgbColor).filter(Boolean);
 
-  try {
     const canvas = await html2canvas(tempContainer, {
       scale: 3,
       useCORS: true,
@@ -225,6 +231,24 @@ export async function exportNoteToPdf({
         addPageStyling();
       }
     }
+    }
+
+    handwritingPages.forEach((page, index) => {
+      if (hasText || index > 0) pdf.addPage();
+      pdf.addImage(
+        handwritingPageDataUrl(page, {
+          showLines: showWritingLines,
+          theme: currentTheme,
+        }),
+        'PNG',
+        0,
+        0,
+        pdfWidth,
+        pdfHeight,
+        undefined,
+        'FAST',
+      );
+    });
     pdf.save(filename);
   } catch (error) {
     console.error('Error generating PDF:', error);

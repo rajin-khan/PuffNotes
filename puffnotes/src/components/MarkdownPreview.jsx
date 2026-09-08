@@ -3,9 +3,11 @@ import ReactMarkdown from 'react-markdown';
 // Import remark-gfm for tables and other GitHub Flavored Markdown features
 import remarkGfm from 'remark-gfm';
 import { THEMES } from '../lib/themeManager';
+import { handwritingPageDataUrl, nonEmptyHandwritingPages } from '../lib/handwriting';
 
-export default function MarkdownPreview({ markdownText, theme = THEMES.WARM }) {
+export default function MarkdownPreview({ handwriting, markdownText, showLines = false, theme = THEMES.WARM }) {
   const textToRender = typeof markdownText === 'string' ? markdownText : '';
+  const handwritingPages = nonEmptyHandwritingPages(handwriting);
   
   const isGalaxyTheme = theme === THEMES.GALAXY;
   const isKomorebiTheme = theme === THEMES.KOMOREBI;
@@ -62,11 +64,19 @@ export default function MarkdownPreview({ markdownText, theme = THEMES.WARM }) {
           `}
         `}
       >
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm]} // Enable GitHub Flavored Markdown
-        >
-          {textToRender}
-        </ReactMarkdown>
+        {textToRender.trim() && (
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {textToRender}
+          </ReactMarkdown>
+        )}
+        {handwritingPages.map((page, index) => (
+          <img
+            key={page.id || index}
+            src={handwritingPageDataUrl(page, { showLines, theme })}
+            alt={`Handwriting page ${index + 1}`}
+            className={`${textToRender.trim() || index ? 'mt-6' : ''} block h-auto w-full outline outline-1 outline-black/10`}
+          />
+        ))}
       </div>
     </div>
   );

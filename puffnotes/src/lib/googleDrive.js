@@ -131,3 +131,55 @@ export async function saveNoteContent(accessToken, folderId, content, fileId, fi
 
     return response.json();
 }
+
+const handwritingName = (noteId) => `handwriting-${noteId}.json`;
+
+async function findHandwritingFile(accessToken, noteId) {
+  const query = `name='${handwritingName(noteId)}' and trashed=false`;
+  const response = await fetch(`https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=${encodeURIComponent(query)}&fields=files(id,name)`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!response.ok) throw new Error('Failed to find handwriting data in Google Drive.');
+  const data = await response.json();
+  return data.files?.[0] || null;
+}
+
+export async function getHandwritingContent(accessToken, noteId) {
+  const file = await findHandwritingFile(accessToken, noteId);
+  if (!file) return null;
+  const response = await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(file.id)}?alt=media`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!response.ok) throw new Error('Failed to load handwriting data from Google Drive.');
+  return { fileId: file.id, document: await response.json() };
+}
+
+export async function saveHandwritingContent(accessToken, noteId, document, handwritingFileId = null) {
+  const existing = handwritingFileId ? { id: handwritingFileId } : await findHandwritingFile(accessToken, noteId);
+  const content = new Blob([JSON.stringify(document)], { type: 'application/json' });
+  let response;
+
+  if (existing) {
+    response = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${encodeURIComponent(existing.id)}?uploadType=media`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${accessToken}` },
+      body: content,
+    });
+  } else {
+    const form = new FormData();
+    form.append('metadata', new Blob([JSON.stringify({
+      name: handwritingName(noteId),
+      parents: ['appDataFolder'],
+    })], { type: 'application/json' }));
+    form.append('file', content);
+    response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}` },
+      body: form,
+    });
+  }
+
+  if (!response.ok) throw new Error('Failed to save handwriting data to Google Drive.');
+  const saved = await response.json();
+  return saved.id || existing.id;
+}

@@ -15,10 +15,18 @@ import ThemeSwitcher from './ThemeSwitcher';
 import SettingsModal from './SettingsModal';
 import WritingLinesControl from './WritingLinesControl';
 import useWritingLines from '../hooks/useWritingLines';
+import HandwritingEditor from './HandwritingEditor';
+import NotePageSwitch from './NotePageSwitch';
 import { ModalPresence } from './ModalMotion';
 import ThemeBackground from './ThemeBackground';
 import { THEMES, getStoredTheme, setStoredTheme } from '../lib/themeManager';
-import { listNotes, getNoteContent, saveNoteContent, trashNote } from '../lib/googleDrive';
+import {
+  getHandwritingContent, getNoteContent, listNotes, saveHandwritingContent,
+  saveNoteContent, trashNote,
+} from '../lib/googleDrive';
+import {
+  createHandwritingDocument, hasHandwriting, normalizeHandwritingDocument,
+} from '../lib/handwriting';
 
 const USER_API_KEY_STORAGE_KEY = 'puffnotes_groqUserApiKey_v1';
 const DEFAULT_GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || '';
@@ -89,6 +97,9 @@ export default function OnlineApp({ user: _user, accessToken, folderId, onSignOu
   const [saveStatus, setSaveStatus] = useState('saved');
   const [focusMode, setFocusMode] = useState(false);
   const [writingLines, updateWritingLines] = useWritingLines();
+  const [editorPage, setEditorPage] = useState('text');
+  const [handwriting, setHandwriting] = useState(createHandwritingDocument);
+  const [handwritingFileId, setHandwritingFileId] = useState(null);
   const [dropAnimationComplete, setDropAnimationComplete] = useState(true);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
@@ -128,9 +139,76 @@ export default function OnlineApp({ user: _user, accessToken, folderId, onSignOu
   
   useEffect(() => { noteContentRef.current = note; }, [note]);
   const refreshFileList = useCallback(async () => operationsRef.current.run(async () => { try { const files = await listNotes(accessToken, folderId); setFileList(files || []); return files; } catch (err) { console.error("Failed to refresh file list:", err); setFileList([]); return []; } }), [accessToken, folderId]);
-  const handleOpenFile = useCallback(async (file) => operationsRef.current.run(async () => { if (!file || isLoadingNoteRef.current) return; isLoadingNoteRef.current = true; setIsLoadingNote(true); setShowFileModal(false); try { const content = await getNoteContent(accessToken, file.id); const baseName = file.name.replace(/\.md$/, ""); setNote(content); noteContentRef.current = content; setNoteName(baseName); setActiveNoteId(file.id); setPreviewNote(""); setShowBeautifyControls(false); setOriginalNote(""); setIsPreviewMode(false); setSaveStatus('saved'); } catch (err) { console.error("Error opening file:", err); alert(`Failed to open file: ${file.name}. Error: ${err.message}`); } finally { isLoadingNoteRef.current = false; setIsLoadingNote(false); } }), [accessToken]);
-  const handleNewNote = useCallback(() => { if (operationsRef.current.deleting) return; if (saveStatus === 'saving') return; setNote(""); noteContentRef.current = ""; setNoteName("untitled"); setActiveNoteId(null); setPreviewNote(""); setShowBeautifyControls(false); setOriginalNote(""); setIsPreviewMode(false); setSaveStatus('unsaved'); }, [saveStatus]);
-  const handleAutoSave = useCallback(async (isNewNote = false) => operationsRef.current.run(async () => { if (!noteName.trim()) { if (isNewNote) alert("Please name your note before saving."); return; } setSaveStatus('saving'); try { const savedFile = await saveNoteContent(accessToken, folderId, noteContentRef.current, activeNoteId, noteName); if (!activeNoteId) { setActiveNoteId(savedFile.id); } await refreshFileList(); setSaveStatus('saved'); } catch (err) { console.error("Autosave failed:", err); setSaveStatus('unsaved'); alert(`Failed to save note: ${err.message}`); } }), [accessToken, activeNoteId, folderId, noteName, refreshFileList]);
+  const handleOpenFile = useCallback(async (file) => operationsRef.current.run(async () => {
+    if (!file || isLoadingNoteRef.current) return;
+    isLoadingNoteRef.current = true;
+    setIsLoadingNote(true);
+    setShowFileModal(false);
+    try {
+      const [content, savedHandwriting] = await Promise.all([
+        getNoteContent(accessToken, file.id),
+        getHandwritingContent(accessToken, file.id).catch((error) => {
+          console.warn('Could not load handwriting data:', error);
+          return null;
+        }),
+      ]);
+      setNote(content);
+      noteContentRef.current = content;
+      setHandwriting(normalizeHandwritingDocument(savedHandwriting?.document));
+      setHandwritingFileId(savedHandwriting?.fileId || null);
+      setNoteName(file.name.replace(/\.md$/, ''));
+      setActiveNoteId(file.id);
+      setPreviewNote('');
+      setShowBeautifyControls(false);
+      setOriginalNote('');
+      setIsPreviewMode(false);
+      setEditorPage('text');
+      setSaveStatus('saved');
+    } catch (err) {
+      console.error('Error opening file:', err);
+      alert(`Failed to open file: ${file.name}. Error: ${err.message}`);
+    } finally {
+      isLoadingNoteRef.current = false;
+      setIsLoadingNote(false);
+    }
+  }), [accessToken]);
+  const handleNewNote = useCallback(() => {
+    if (operationsRef.current.deleting || saveStatus === 'saving') return;
+    setNote('');
+    noteContentRef.current = '';
+    setHandwriting(createHandwritingDocument());
+    setHandwritingFileId(null);
+    setEditorPage('text');
+    setNoteName('untitled');
+    setActiveNoteId(null);
+    setPreviewNote('');
+    setShowBeautifyControls(false);
+    setOriginalNote('');
+    setIsPreviewMode(false);
+    setSaveStatus('unsaved');
+  }, [saveStatus]);
+  const handleAutoSave = useCallback(async (isNewNote = false) => operationsRef.current.run(async () => {
+    if (!noteName.trim()) {
+      if (isNewNote) alert('Please name your note before saving.');
+      return;
+    }
+    setSaveStatus('saving');
+    try {
+      const savedFile = await saveNoteContent(accessToken, folderId, noteContentRef.current, activeNoteId, noteName);
+      const noteId = activeNoteId || savedFile.id;
+      if (!activeNoteId) setActiveNoteId(noteId);
+      if (hasHandwriting(handwriting) || handwritingFileId) {
+        const savedDrawingId = await saveHandwritingContent(accessToken, noteId, handwriting, handwritingFileId);
+        setHandwritingFileId(savedDrawingId);
+      }
+      await refreshFileList();
+      setSaveStatus('saved');
+    } catch (err) {
+      console.error('Autosave failed:', err);
+      setSaveStatus('unsaved');
+      alert(`Failed to save note: ${err.message}`);
+    }
+  }), [accessToken, activeNoteId, folderId, handwriting, handwritingFileId, noteName, refreshFileList]);
 
   const handleDeleteNote = async (file) => {
     if (operationsRef.current.busy) {
@@ -145,6 +223,7 @@ export default function OnlineApp({ user: _user, accessToken, folderId, onSignOu
         if (activeNoteId === file.id) {
           operationsRef.current.invalidate();
           setNote(''); noteContentRef.current = ''; setNoteName('untitled'); setActiveNoteId(null);
+          setHandwriting(createHandwritingDocument()); setHandwritingFileId(null); setEditorPage('text');
           setPreviewNote(''); setOriginalNote(''); setShowBeautifyControls(false); setIsPreviewMode(false);
           setSaveStatus('saved');
         }
@@ -171,16 +250,23 @@ export default function OnlineApp({ user: _user, accessToken, folderId, onSignOu
     const { exportNoteToPdf } = await import('../lib/exportNoteToPdf');
     return exportNoteToPdf({
       contentToExport: showBeautifyControls ? previewNote : note,
-      currentTheme, isExportingPdf, noteName, setIsExportingPdf,
+      currentTheme, handwriting, isExportingPdf, noteName, setIsExportingPdf,
+      showWritingLines: writingLines,
     });
-  }, [currentTheme, isExportingPdf, note, noteName, previewNote, showBeautifyControls]);
+  }, [currentTheme, handwriting, isExportingPdf, note, noteName, previewNote, showBeautifyControls, writingLines]);
   const toggleFocusMode = useCallback(() => setFocusMode(prev => !prev), []);
   const togglePreviewMode = () => { if (!showBeautifyControls) setIsPreviewMode(prev => !prev); };
   useEffect(() => { const loadInitialFiles = async () => { const files = await refreshFileList(); if (files.length > 0) { await handleOpenFile(files[0]); } setIsInitialLoad(false); }; loadInitialFiles(); }, [handleOpenFile, refreshFileList]);
-  useEffect(() => { if (deletingNote || isInitialLoad || saveStatus !== 'unsaved') { return undefined; } const revision = operationsRef.current.revision; const handler = setTimeout(() => { if (revision === operationsRef.current.revision) handleAutoSave(); }, 1500); return () => { clearTimeout(handler); }; }, [deletingNote, handleAutoSave, isInitialLoad, note, noteName, saveStatus]);
+  useEffect(() => { if (deletingNote || isInitialLoad || saveStatus !== 'unsaved') { return undefined; } const revision = operationsRef.current.revision; const handler = setTimeout(() => { if (revision === operationsRef.current.revision) handleAutoSave(); }, 1500); return () => { clearTimeout(handler); }; }, [deletingNote, handleAutoSave, handwriting, isInitialLoad, note, noteName, saveStatus]);
   const handleNoteChange = (e) => { const newContent = e.target.value; if (!showBeautifyControls) { setNote(newContent); setSaveStatus('unsaved'); } };
   const handleNoteNameChange = (e) => { setNoteName(e.target.value); setSaveStatus('unsaved'); };
   useEffect(() => { const handleKeyDown = (e) => { if (operationsRef.current.deleting) { e.preventDefault(); return; } const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0; const ctrlOrCmd = isMac ? e.metaKey : e.ctrlKey; const isTyping = ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName); if (isTyping && document.activeElement !== document.querySelector("textarea")) return; if (ctrlOrCmd && e.key === 'Enter') { e.preventDefault(); if (!isBeautifying && note.trim()) handleBeautify(false); } else if (ctrlOrCmd && e.key.toLowerCase() === 'p') { e.preventDefault(); if (!showBeautifyControls) setIsPreviewMode(prev => !prev); } else if (ctrlOrCmd && e.key.toLowerCase() === 'e') { e.preventDefault(); handleExportPdf(); } else if (ctrlOrCmd && e.key.toLowerCase() === 'k') { e.preventDefault(); handleNewNote(); } else if (ctrlOrCmd && e.key.toLowerCase() === 's') { e.preventDefault(); if(saveStatus === 'unsaved') handleAutoSave(); } else if (ctrlOrCmd && e.shiftKey && e.key.toLowerCase() === 'f') { e.preventDefault(); toggleFocusMode(); } else if (ctrlOrCmd && e.key.toLowerCase() === 'o') { e.preventDefault(); setShowFileModal(p => !p); } else if (ctrlOrCmd && e.key.toLowerCase() === '.') { setDropAnimationComplete(false); setIsEditorVisible(prev => !prev); } else if (ctrlOrCmd && e.key === '/') { setShowShortcutsModal(prev => !prev); } }; window.addEventListener('keydown', handleKeyDown); return () => window.removeEventListener('keydown', handleKeyDown); }, [note, isBeautifying, showBeautifyControls, saveStatus, handleBeautify, handleExportPdf, handleNewNote, handleAutoSave, toggleFocusMode, setShowShortcutsModal]);
+
+  const drawingSurface = editorPage === 'handwriting' && !isPreviewMode;
+  const drawingSurfaceColor = currentTheme === THEMES.GALAXY
+    ? 'bg-[#f5f7ff]/95'
+    : currentTheme === THEMES.KOMOREBI ? 'bg-[#f8f6ed]/95' : 'bg-[#fdfbf7]/95';
+  const drawingInk = currentTheme === THEMES.GALAXY ? 'text-[#293047]' : 'text-[#443b32]';
 
   return (
     <>
@@ -311,23 +397,26 @@ export default function OnlineApp({ user: _user, accessToken, folderId, onSignOu
           )}
         </ModalPresence>
 
-        <AnimatePresence> {!isEditorVisible && dropAnimationComplete && ( <motion.div className="fixed bottom-0 left-0 right-0 z-10 flex justify-center" initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: "spring", stiffness: 400, damping: 40, mass: 1 }}> <motion.div className={`relative after:content-[''] after:absolute after:top-full after:left-0 after:right-0 after:h-1 after:bg-inherit border-t rounded-t-2xl shadow-2xl px-6 py-3 flex items-center space-x-3 cursor-pointer ${currentTheme === THEMES.GALAXY ? 'bg-[#0f1642] border-[#2d3561]' : 'bg-white border-[#e6ddcc]'} ${currentTheme === THEMES.KOMOREBI ? 'komorebi-editor-tab' : ''}`} onClick={() => { setDropAnimationComplete(false); setIsEditorVisible(true); }} whileHover={{ y: -2, boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)" }} whileTap={{ scale: 0.98 }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ delay: 0.1 }}> <motion.span className={`font-serif text-lg tracking-tight ${currentTheme === THEMES.GALAXY ? 'text-[#e8eaf6]' : 'text-[#1a1a1a]'}`} animate={{ y: [0, -1, 0] }} transition={{ repeat: Infinity, repeatType: "mirror", duration: 2, ease: "easeInOut" }}> puffnotes </motion.span> <span className={currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3]' : 'text-gray-400'}>|</span> <span className={`font-serif text-sm max-w-[150px] sm:max-w-xs truncate ${currentTheme === THEMES.GALAXY ? 'text-[#b8bfde]' : 'text-gray-500'}`} title={noteName || "untitled"}> {noteName || "untitled"} </span> </motion.div> </motion.div> )} </AnimatePresence>
+        <AnimatePresence> {!isEditorVisible && dropAnimationComplete && ( <motion.div className="fixed bottom-0 left-0 right-0 z-10 flex justify-center" initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: "spring", stiffness: 400, damping: 40, mass: 1 }}> <motion.div className={`relative after:content-[''] after:absolute after:top-full after:left-0 after:right-0 after:h-1 after:bg-inherit border-t rounded-t-2xl shadow-2xl px-6 py-3 flex items-center space-x-3 cursor-pointer transition-colors duration-500 ${drawingSurface ? `${drawingSurfaceColor} border-black/10` : currentTheme === THEMES.GALAXY ? 'bg-[#0f1642] border-[#2d3561]' : 'bg-white border-[#e6ddcc]'} ${currentTheme === THEMES.KOMOREBI && !drawingSurface ? 'komorebi-editor-tab' : ''}`} onClick={() => { setDropAnimationComplete(false); setIsEditorVisible(true); }} whileHover={{ y: -2, boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)" }} whileTap={{ scale: 0.98 }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ delay: 0.1 }}> <motion.span className={`font-serif text-lg tracking-tight ${drawingSurface ? drawingInk : currentTheme === THEMES.GALAXY ? 'text-[#e8eaf6]' : 'text-[#1a1a1a]'}`} animate={{ y: [0, -1, 0] }} transition={{ repeat: Infinity, repeatType: "mirror", duration: 2, ease: "easeInOut" }}> puffnotes </motion.span> <span className={drawingSurface ? 'text-[#8a8177]' : currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3]' : 'text-gray-400'}>|</span> <span className={`font-serif text-sm max-w-[150px] sm:max-w-xs truncate ${drawingSurface ? drawingInk : currentTheme === THEMES.GALAXY ? 'text-[#b8bfde]' : 'text-gray-500'}`} title={noteName || "untitled"}> {noteName || "untitled"} </span> </motion.div> </motion.div> )} </AnimatePresence>
 
         <motion.div data-note-page-stage className="fixed bottom-0 left-0 right-0 z-20" initial={shouldReduceMotion ? false : { y: '100%' }} animate={{ y: isEditorVisible ? 0 : '101%' }} transition={shouldReduceMotion ? { duration: 0 } : { type: "spring", stiffness: 300, damping: 35, mass: 0.8 }} onAnimationComplete={() => setDropAnimationComplete(true)}>
-          <div data-note-page className={`rounded-t-2xl shadow-2xl max-w-full sm:max-w-3xl mx-auto p-4 sm:p-6 h-[88vh] sm:h-[90vh] flex flex-col relative transition-colors duration-500 ${focusMode ? (currentTheme === THEMES.GALAXY ? 'bg-[#0d1235]/95' : 'bg-[#fdfbf7]/95') : (currentTheme === THEMES.GALAXY ? 'bg-[#0f1642]/95' : 'bg-white/95')} ${currentTheme === THEMES.KOMOREBI ? `komorebi-editor-surface ${focusMode ? 'komorebi-editor-focus' : ''}` : ''}`}>
+          <div data-note-page data-editor-page={editorPage} className={`rounded-t-2xl shadow-2xl max-w-full sm:max-w-3xl mx-auto p-4 sm:p-6 h-[88vh] sm:h-[90vh] flex flex-col relative transition-colors duration-500 ${drawingSurface ? drawingSurfaceColor : focusMode ? (currentTheme === THEMES.GALAXY ? 'bg-[#0d1235]/95' : 'bg-[#fdfbf7]/95') : (currentTheme === THEMES.GALAXY ? 'bg-[#0f1642]/95' : 'bg-white/95')} ${currentTheme === THEMES.KOMOREBI && !drawingSurface ? `komorebi-editor-surface ${focusMode ? 'komorebi-editor-focus' : ''}` : ''}`}>
              <motion.div className="flex justify-between items-center mb-3 sm:mb-4 flex-shrink-0" animate={{ opacity: focusMode ? 0.3 : 1 }} transition={{ duration: 0.5 }} style={{ pointerEvents: focusMode ? 'none' : 'auto' }}>
-              <motion.h1 className={`font-serif text-xl sm:text-2xl tracking-tight flex-shrink-0 ${currentTheme === THEMES.GALAXY ? 'text-[#e8eaf6]' : 'text-[#1a1a1a]'}`} whileHover={!focusMode ? { x: 2 } : {}}> puffnotes </motion.h1>
+              <div className="flex flex-shrink-0 items-center gap-2 sm:gap-3">
+                <motion.h1 className={`font-serif text-xl sm:text-2xl tracking-tight ${drawingSurface ? drawingInk : currentTheme === THEMES.GALAXY ? 'text-[#e8eaf6]' : 'text-[#1a1a1a]'}`} whileHover={!focusMode ? { x: 2 } : {}}> puffnotes </motion.h1>
+                {!focusMode && !isPreviewMode && <NotePageSwitch page={editorPage} onChange={setEditorPage} theme={currentTheme} />}
+              </div>
               <div className="flex-1 flex justify-center items-center gap-2 mx-2 sm:mx-4 min-w-0">
-                 <motion.input type="text" value={noteName} onChange={handleNoteNameChange} className={`text-center font-serif text-xs sm:text-sm bg-transparent outline-none w-full max-w-[50%] sm:max-w-[70%] border-b border-transparent transition-opacity duration-300 ${focusMode || isPreviewMode ? 'opacity-0 pointer-events-none' : 'opacity-100'} ${currentTheme === THEMES.GALAXY ? 'text-[#b8bfde] focus:border-[#9b59b6]' : 'text-gray-500 focus:border-gray-300'}`} placeholder="note name..." whileFocus={{ scale: 1.02 }} disabled={focusMode || isPreviewMode} />
-                 {!showBeautifyControls && !focusMode && note.trim() && (
-                     <motion.button onClick={togglePreviewMode} title={isPreviewMode ? "Edit Note" : "Preview Markdown"} className={`opacity-60 hover:opacity-100 transition p-1 flex-shrink-0 ${currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3] hover:text-[#e8eaf6]' : 'text-gray-500 hover:text-gray-800'}`} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+                 <motion.input type="text" value={noteName} onChange={handleNoteNameChange} className={`w-full max-w-[50%] border-b border-transparent bg-transparent text-center font-serif text-base outline-none transition-opacity duration-300 sm:max-w-[70%] sm:text-sm ${focusMode || isPreviewMode ? 'opacity-0 pointer-events-none' : 'opacity-100'} ${drawingSurface ? `${drawingInk} focus:border-[#8a8177]` : currentTheme === THEMES.GALAXY ? 'text-[#b8bfde] focus:border-[#9b59b6]' : 'text-gray-500 focus:border-gray-300'}`} placeholder="note name..." whileFocus={{ scale: 1.02 }} disabled={focusMode || isPreviewMode} />
+                 {!showBeautifyControls && !focusMode && (note.trim() || hasHandwriting(handwriting)) && (
+                     <motion.button onClick={togglePreviewMode} title={isPreviewMode ? "Edit Note" : "Preview Note"} className={`opacity-60 hover:opacity-100 transition p-1 flex-shrink-0 ${drawingSurface ? 'text-[#4f566b] hover:text-[#20263a]' : currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3] hover:text-[#e8eaf6]' : 'text-gray-500 hover:text-gray-800'}`} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
                          {isPreviewMode ? <Pen size={16} /> : <Eye size={16} />}
                      </motion.button>
                   )}
-                 {!focusMode && !isPreviewMode && <WritingLinesControl value={writingLines} onChange={updateWritingLines} theme={currentTheme} />}
+                 {!focusMode && !isPreviewMode && <WritingLinesControl light={drawingSurface} value={writingLines} onChange={updateWritingLines} theme={currentTheme} />}
               </div>
-              <div className={`flex space-x-2 sm:space-x-4 text-lg flex-shrink-0 ${currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3]' : 'text-gray-600'}`}>
-                <motion.button title="Export as PDF" onClick={handleExportPdf} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }} className={`p-1 disabled:opacity-30 ${currentTheme === THEMES.GALAXY ? 'hover:text-[#e8eaf6]' : 'hover:text-gray-900'}`} disabled={!(showBeautifyControls ? previewNote : note).trim() || isExportingPdf}>
+              <div className={`flex space-x-2 sm:space-x-4 text-lg flex-shrink-0 ${drawingSurface ? drawingInk : currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3]' : 'text-gray-600'}`}>
+                <motion.button title="Export as PDF" onClick={handleExportPdf} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }} className={`p-1 disabled:opacity-30 ${drawingSurface ? 'hover:text-black' : currentTheme === THEMES.GALAXY ? 'hover:text-[#e8eaf6]' : 'hover:text-gray-900'}`} disabled={(!(showBeautifyControls ? previewNote : note).trim() && !hasHandwriting(handwriting)) || isExportingPdf}>
                   {isExportingPdf ? (
                     <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}>
                       <RotateCw size={18} className={currentTheme === THEMES.GALAXY ? "text-[#8b9dc3]" : "text-gray-400"} />
@@ -341,23 +430,25 @@ export default function OnlineApp({ user: _user, accessToken, folderId, onSignOu
                     </svg>
                   )}
                 </motion.button>
-                <motion.button title="New Note" onClick={handleNewNote} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }} className={`p-1 ${currentTheme === THEMES.GALAXY ? 'hover:text-[#e8eaf6]' : 'hover:text-gray-900'}`}>
+                <motion.button title="New Note" onClick={handleNewNote} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }} className={`p-1 ${drawingSurface ? 'hover:text-black' : currentTheme === THEMES.GALAXY ? 'hover:text-[#e8eaf6]' : 'hover:text-gray-900'}`}>
                   <FilePlus size={18} />
                 </motion.button>
               </div>
             </motion.div>
-            <motion.hr className={`mb-4 flex-shrink-0 ${currentTheme === THEMES.GALAXY ? 'border-[#2d3561]' : 'border-gray-200'}`} animate={{ opacity: focusMode ? 0.2 : 1 }} />
-            <div className="flex-1 overflow-y-auto relative" >
+            <motion.hr className={`mb-4 flex-shrink-0 ${drawingSurface ? 'border-black/10' : currentTheme === THEMES.GALAXY ? 'border-[#2d3561]' : 'border-gray-200'}`} animate={{ opacity: focusMode ? 0.2 : 1 }} />
+            <div className={`flex-1 relative ${editorPage === 'handwriting' && !isPreviewMode ? 'min-h-0 overflow-visible' : 'overflow-y-auto'}`}>
               {(isLoadingNote || isInitialLoad) ? (
                  <div className={`w-full h-full flex items-center justify-center font-serif ${currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3]' : 'text-gray-400'}`}>Loading note...</div>
                ) : isPreviewMode && !showBeautifyControls ? (
-                  <MarkdownPreview markdownText={note} theme={currentTheme} />
+                  <MarkdownPreview handwriting={handwriting} markdownText={note} showLines={writingLines} theme={currentTheme} />
+               ) : editorPage === 'handwriting' ? (
+                  <HandwritingEditor document={handwriting} onChange={(document) => { setHandwriting(document); setSaveStatus('unsaved'); }} showLines={writingLines} theme={currentTheme} />
                ) : (
-                  <textarea value={showBeautifyControls ? previewNote : note} onChange={handleNoteChange} placeholder="A quiet place to write..." className={`w-full h-full font-mono text-sm bg-transparent resize-none outline-none placeholder:italic transition-[color,font-size,padding] duration-300 ${writingLines ? 'ruled-writing-surface' : 'leading-relaxed'} ${focusMode ? 'text-base px-2' : 'text-sm'} [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${currentTheme === THEMES.GALAXY ? 'text-[#e8eaf6] placeholder:text-[#6c7b95]' : 'text-gray-800 placeholder:text-gray-400'}`} readOnly={Boolean(deletingNote) || isBeautifying || showBeautifyControls} />
+                  <textarea value={showBeautifyControls ? previewNote : note} onChange={handleNoteChange} placeholder="A quiet place to write..." className={`h-full w-full resize-none bg-transparent font-mono text-base outline-none placeholder:italic transition-[color,font-size,padding] duration-300 sm:text-sm ${writingLines ? 'ruled-writing-surface' : 'leading-relaxed'} ${focusMode ? 'px-2 text-base' : ''} [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${currentTheme === THEMES.GALAXY ? 'text-[#e8eaf6] placeholder:text-[#6c7b95]' : 'text-gray-800 placeholder:text-gray-400'}`} readOnly={Boolean(deletingNote) || isBeautifying || showBeautifyControls} />
                )}
             </div>
              <AnimatePresence>
-                {isEditorVisible && !focusMode && !isPreviewMode && (
+                {editorPage === 'text' && isEditorVisible && !focusMode && !isPreviewMode && (
                   <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}>
                     {note.trim() && (
                       <div className="absolute bottom-4 right-4 z-30 flex-shrink-0">
