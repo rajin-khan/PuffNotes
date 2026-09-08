@@ -46,7 +46,7 @@ export default function LandingPage({ onStartOffline, onStartOnline, isOnlineLoa
   }, [introComplete]);
 
   // --- NEW: Your simple, editable message ---
-  const devMessage = "- Themes have landed! Request newer ones";
+  const devMessage = 'Handwritten Notes are here! Draw away 🥳';
 
   return (
     <motion.div
@@ -149,7 +149,7 @@ export default function LandingPage({ onStartOffline, onStartOnline, isOnlineLoa
               <motion.div className="mt-8 w-full text-center" variants={itemVariants}>
                 <p className="font-mono text-[10px] font-semibold uppercase tracking-widest text-[#F5F5DC]/50">Stable 2.2.0</p>
                 <p className="mt-2 font-mono text-xs text-[#F5F5DC]/50 italic">
-                  {devMessage}{' '}<a href="https://github.com/rajin-khan/PuffNotes/discussions/1" target="_blank" rel="noopener noreferrer" className="underline hover:text-white/70 transition-colors">here</a>!
+                  {devMessage}
                 </p>
                 <p className="mt-2 font-mono text-xs text-white/40">Created by{' '}<a href="https://rajinkhan.com" target="_blank" rel="noopener noreferrer" className="font-creator-signature underline transition-colors hover:text-white/70">Rajin Khan</a></p>
                 <p className="mt-1 font-mono text-xs text-white/30">
