@@ -1,5 +1,5 @@
 // src/components/LandingPage.jsx
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Wifi, FolderLock, ArrowRight, ArrowLeft, Cloud, MonitorSmartphone, ShieldCheck, FileText } from 'lucide-react';
 import { getStoredTheme } from '../lib/themeManager';
@@ -23,6 +23,27 @@ export default function LandingPage({ onStartOffline, onStartOnline, isOnlineLoa
   const shouldReduceMotion = useReducedMotion();
   const [showInfo, setShowInfo] = useState(false);
   const [homeTheme] = useState(() => getStoredTheme());
+  const [introComplete, setIntroComplete] = useState(() => {
+    try {
+      return sessionStorage.getItem('puffnotes_intro_seen') === 'true'
+        || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    } catch {
+      return true;
+    }
+  });
+
+  useEffect(() => {
+    if (introComplete) return undefined;
+    const timer = window.setTimeout(() => {
+      setIntroComplete(true);
+      try {
+        sessionStorage.setItem('puffnotes_intro_seen', 'true');
+      } catch {
+        // The intro can still finish when storage is unavailable.
+      }
+    }, 2200);
+    return () => window.clearTimeout(timer);
+  }, [introComplete]);
 
   // --- NEW: Your simple, editable message ---
   const devMessage = "- Themes have landed! Request newer ones";
@@ -41,11 +62,41 @@ export default function LandingPage({ onStartOffline, onStartOnline, isOnlineLoa
       <ThemeBackground theme={homeTheme} />
       <div className="absolute inset-0 h-full w-full bg-black/70"></div>
 
-      {/* Main Content Panel */}
+      <AnimatePresence mode="wait" initial={false}>
+      {!introComplete ? (
+        <motion.div
+          key="opening-title"
+          className="relative z-10 flex flex-col items-center text-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0, scale: 0.98 }}
+          transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+          aria-label="Puffnotes is loading"
+        >
+          <motion.h1
+            className="font-serif text-6xl tracking-tight text-[#f5f5dc] sm:text-7xl"
+            initial={{ opacity: 0, y: 12, filter: 'blur(6px)' }}
+            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+          >
+            puffnotes
+          </motion.h1>
+          <motion.div
+            className="mt-4 h-px w-32 origin-center bg-[#f5f5dc]/55"
+            initial={{ scaleX: 0, opacity: 0 }}
+            animate={{ scaleX: 1, opacity: 1 }}
+            transition={{ delay: 0.55, duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+            aria-hidden="true"
+          />
+        </motion.div>
+      ) : (
       <motion.div
+        key="mode-chooser"
         data-landing-content
         layout
+        initial={shouldReduceMotion ? false : { opacity: 0, y: 16, scale: 0.98 }}
         animate={{ opacity: isOnlineLoading ? 0 : 1, scale: isOnlineLoading && !shouldReduceMotion ? 0.98 : 1 }}
+        exit={{ opacity: 0, y: -8 }}
         transition={{ duration: shouldReduceMotion ? 0 : 0.7, ease: [0.32, 0.72, 0, 1] }}
         className="relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-[#121212]/80"
       >
@@ -63,6 +114,7 @@ export default function LandingPage({ onStartOffline, onStartOnline, isOnlineLoa
               <motion.h1 className="font-serif text-5xl tracking-tight text-[#F5F5DC]/95 sm:text-6xl" style={{ textShadow: '0 2px 25px rgba(0, 0, 0, 0.5)' }} variants={itemVariants}>
                 puffnotes
               </motion.h1>
+              <motion.div className="mt-3 h-px w-20 bg-[#f5f5dc]/30" variants={itemVariants} aria-hidden="true" />
               <motion.p className="mt-2 font-mono text-base text-[#F5F5DC]/60" variants={itemVariants}>
                 Your quiet place.
               </motion.p>
@@ -161,6 +213,8 @@ export default function LandingPage({ onStartOffline, onStartOnline, isOnlineLoa
           )}
         </AnimatePresence>
       </motion.div>
+      )}
+      </AnimatePresence>
     </motion.div>
   );
 }
