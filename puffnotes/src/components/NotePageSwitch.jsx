@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { FileText, PenLine } from 'lucide-react';
 import { THEMES } from '../lib/themeManager';
-import { isMobileDevice } from '../lib/deviceSupport';
+import { isPhoneDevice } from '../lib/deviceSupport';
 import { ModalPresence } from './ModalMotion';
 
 export default function NotePageSwitch({ page, onChange, theme }) {
@@ -19,7 +19,7 @@ export default function NotePageSwitch({ page, onChange, theme }) {
       : 'bg-white text-[#443b32]';
 
   const switchPage = () => {
-    if (!handwriting && isMobileDevice()) {
+    if (!handwriting && isPhoneDevice()) {
       setShowMobileNotice(true);
       return;
     }
