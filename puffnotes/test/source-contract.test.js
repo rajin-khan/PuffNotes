@@ -16,7 +16,7 @@ test('landing copy and current version remain unchanged', async () => {
     'Your quiet place.',
     'Works anywhere.',
     'Desktop & Chromium Browsers only.',
-    'Stable 2.1.4',
+    'Stable 2.2.0',
     'Themes have landed! Request newer ones',
   ]) {
     assert.ok(source.includes(expected), `missing landing contract: ${expected}`);
