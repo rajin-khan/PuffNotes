@@ -237,6 +237,18 @@ export default function SettingsModal({ isOpen, onClose, currentTheme, onThemeCh
                           </motion.div>
                         ))}
                       </div>
+                      <a
+                        href="https://github.com/rajin-khan/PuffNotes/discussions/1"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`mt-5 inline-flex rounded-md px-1 py-1 text-sm underline underline-offset-4 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
+                          theme === THEMES.GALAXY
+                            ? 'text-[#b8bfde] hover:text-[#e8eaf6] focus-visible:ring-[#9b59b6] focus-visible:ring-offset-[#0f1642]'
+                            : 'text-gray-600 hover:text-[#5c4a40] focus-visible:ring-[#9a8c73] focus-visible:ring-offset-white'
+                        }`}
+                      >
+                        Request another Puffnotes theme ↗
+                      </a>
                     </div>
                   </motion.div>
                 )}

@@ -7,15 +7,25 @@ import ThemeBackground from './ThemeBackground';
 
 // Animation variants
 const itemVariants = {
-  initial: { y: 20, opacity: 0 },
-  animate: { y: 0, opacity: 1, transition: { ease: 'easeOut', duration: 0.5 } },
-  exit: { y: -20, opacity: 0, transition: { ease: 'easeIn', duration: 0.3 } },
+  initial: { y: 12, opacity: 0 },
+  animate: { y: 0, opacity: 1, transition: { ease: [0.22, 1, 0.36, 1], duration: 0.42 } },
+  exit: { y: -8, opacity: 0, transition: { ease: 'easeOut', duration: 0.2 } },
 };
 
-const containerVariants = {
-  initial: { opacity: 0 },
-  animate: { opacity: 1, transition: { staggerChildren: 0.1, delayChildren: 0.2 } },
-  exit: { opacity: 0 },
+const viewVariants = {
+  initial: (direction) => ({ opacity: 0, x: direction * 22, filter: 'blur(4px)' }),
+  animate: {
+    opacity: 1,
+    x: 0,
+    filter: 'blur(0px)',
+    transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1], staggerChildren: 0.065, delayChildren: 0.06 },
+  },
+  exit: (direction) => ({
+    opacity: 0,
+    x: direction * -14,
+    filter: 'blur(3px)',
+    transition: { duration: 0.22, ease: 'easeOut' },
+  }),
 };
 
 
@@ -106,7 +116,8 @@ export default function LandingPage({ onStartOffline, onStartOnline, isOnlineLoa
             <motion.div
               key="front"
               className="flex flex-col items-center p-6 text-center sm:p-10"
-              variants={containerVariants}
+              custom={-1}
+              variants={viewVariants}
               initial="initial"
               animate="animate"
               exit="exit"
@@ -114,7 +125,13 @@ export default function LandingPage({ onStartOffline, onStartOnline, isOnlineLoa
               <motion.h1 className="font-serif text-5xl tracking-tight text-[#F5F5DC]/95 sm:text-6xl" style={{ textShadow: '0 2px 25px rgba(0, 0, 0, 0.5)' }} variants={itemVariants}>
                 puffnotes
               </motion.h1>
-              <motion.div className="mt-3 h-px w-20 bg-[#f5f5dc]/30" variants={itemVariants} aria-hidden="true" />
+              <motion.div
+                className="mt-3 h-px w-20 origin-center bg-[#f5f5dc]/30"
+                initial={shouldReduceMotion ? false : { scaleX: 0, opacity: 0 }}
+                animate={{ scaleX: 1, opacity: 1 }}
+                transition={{ delay: shouldReduceMotion ? 0 : 0.18, duration: shouldReduceMotion ? 0 : 0.65, ease: [0.22, 1, 0.36, 1] }}
+                aria-hidden="true"
+              />
               <motion.p className="mt-2 font-mono text-base text-[#F5F5DC]/60" variants={itemVariants}>
                 Your quiet place.
               </motion.p>
@@ -162,7 +179,8 @@ export default function LandingPage({ onStartOffline, onStartOnline, isOnlineLoa
             <motion.div
               key="back"
               className="flex flex-col p-6 text-left sm:p-8"
-              variants={containerVariants}
+              custom={1}
+              variants={viewVariants}
               initial="initial"
               animate="animate"
               exit="exit"

@@ -23,6 +23,39 @@ test('landing copy and current version remain unchanged', async () => {
   }
 });
 
+test('landing motion preserves the session intro and redraws the chooser underline', async () => {
+  const source = await readSource('src/components/LandingPage.jsx');
+
+  assertIncludesAll(source, [
+    "sessionStorage.getItem('puffnotes_intro_seen')",
+    "sessionStorage.setItem('puffnotes_intro_seen', 'true')",
+    'origin-center bg-[#f5f5dc]/30',
+    'initial={shouldReduceMotion ? false : { scaleX: 0, opacity: 0 }}',
+    'variants={viewVariants}',
+  ], 'landing motion contract');
+});
+
+test('offline notes start autosaving as soon as a folder is selected', async () => {
+  const source = await readSource('src/components/OfflineApp.jsx');
+
+  assert.ok(!source.includes('latest.isFirstSave || !latest.folderHandle'));
+  assertIncludesAll(source, [
+    'if (!latest.folderHandle || !latest.noteName.trim() || latest.showBeautifyControls) return;',
+    'setIsFirstSave(false);',
+    '[deletingNote, folderHandle, handwriting, isFirstSave, note, noteName]',
+  ], 'first offline autosave contract');
+  assert.ok(!source.includes('Save Note (Cmd/Ctrl + S)'), 'the first-save prompt must stay hidden');
+  assert.ok(!source.includes('title="Save Note"'), 'the first-save toolbar button must stay hidden');
+});
+
+test('settings keeps the public theme request link', async () => {
+  const source = await readSource('src/components/SettingsModal.jsx');
+  assertIncludesAll(source, [
+    'https://github.com/rajin-khan/PuffNotes/discussions/1',
+    'Request another Puffnotes theme',
+  ], 'theme request contract');
+});
+
 test('every visible Rajin Khan credit uses the self-hosted handwritten font', async () => {
   const paths = [
     'src/components/LandingPage.jsx',

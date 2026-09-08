@@ -2,7 +2,7 @@
 import { useCallback, useState, useEffect, useRef } from 'react';
 import useFileSystemAccess from '../hooks/useFileSystemAccess';
 import {
-  Trash2, FilePlus, FolderOpen, ChevronDown, ChevronUp, X, Wand2, Save, Check,
+  Trash2, FilePlus, FolderOpen, ChevronDown, ChevronUp, X, Wand2, Check,
   RotateCw, XCircle, CheckCircle, Info, KeyRound, AlertTriangle,
   Eye, Pen, Keyboard, Home, HelpCircle, Settings
 } from 'lucide-react';
@@ -261,7 +261,7 @@ export default function OfflineApp({ onGoToLanding }) {
     const revision = operationsRef.current.revision;
     const autoSave = () => operationsRef.current.run(async () => {
       const latest = autoSaveContextRef.current;
-      if (latest.isFirstSave || !latest.folderHandle || !latest.noteName.trim() || latest.showBeautifyControls) return;
+      if (!latest.folderHandle || !latest.noteName.trim() || latest.showBeautifyControls) return;
       const newFilename = latest.noteName.endsWith('.md') ? latest.noteName : `${latest.noteName}.md`;
       try {
         if (newFilename === latest.activeFileName) {
@@ -275,6 +275,7 @@ export default function OfflineApp({ onGoToLanding }) {
         if (latest.activeFileName) await latest.deleteNote(latest.activeFileName);
         setNoteName(savedAs.replace(/\.md$/, ''));
         setActiveFileName(savedAs);
+        setIsFirstSave(false);
         await latest.refreshFileList();
       } catch (err) {
         console.error('Autosave failed:', err);
@@ -282,7 +283,7 @@ export default function OfflineApp({ onGoToLanding }) {
     }, revision);
     const debounceTimeout = setTimeout(autoSave, 850);
     return () => clearTimeout(debounceTimeout);
-  }, [deletingNote, handwriting, note, noteName]);
+  }, [deletingNote, folderHandle, handwriting, isFirstSave, note, noteName]);
   useEffect(() => { if (folderHandle) { refreshFileList(); } else { setFileList([]); } }, [folderHandle, refreshFileList]);
   useEffect(() => { const handleKeyDown = (e) => { if (operationsRef.current.deleting) { e.preventDefault(); return; } const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0; const ctrlOrCmd = isMac ? e.metaKey : e.ctrlKey; const isTyping = ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName); if (isTyping && document.activeElement !== document.querySelector("textarea")) return; if (ctrlOrCmd && e.key === 'Enter') { e.preventDefault(); if (!isBeautifying && note.trim()) handleBeautify(false); } else if (ctrlOrCmd && e.key.toLowerCase() === 'p') { e.preventDefault(); if (!showBeautifyControls) setIsPreviewMode(prev => !prev); } else if (ctrlOrCmd && e.key.toLowerCase() === 'e') { e.preventDefault(); handleExportPdf(); } else if (ctrlOrCmd && e.key.toLowerCase() === 'k') { e.preventDefault(); handleNewNote(); } else if (ctrlOrCmd && e.key.toLowerCase() === 's') { e.preventDefault(); handleSave(); } else if (ctrlOrCmd && e.shiftKey && e.key.toLowerCase() === 'f') { e.preventDefault(); toggleFocusMode(); } else if (ctrlOrCmd && e.key.toLowerCase() === 'o') { e.preventDefault(); handleFolderButton(); } else if (ctrlOrCmd && e.key.toLowerCase() === '.') { setDropAnimationComplete(false); setIsEditorVisible(prev => !prev); } else if (ctrlOrCmd && e.key === '/') { setShowShortcutsModal(prev => !prev); } }; window.addEventListener('keydown', handleKeyDown); return () => window.removeEventListener('keydown', handleKeyDown); }, [ note, isBeautifying, showBeautifyControls, handleBeautify, handleExportPdf, handleNewNote, handleSave, toggleFocusMode, handleFolderButton, setShowShortcutsModal ]);
 
@@ -353,11 +354,11 @@ export default function OfflineApp({ onGoToLanding }) {
           initial={shouldReduceMotion ? false : { opacity: 0 }}
           animate={{ opacity: 1, transition: { duration: shouldReduceMotion ? 0 : 0.35, delay: shouldReduceMotion ? 0 : 0.22 } }}
         >
-          <AnimatePresence> {(!folderHandle || isFirstSave) && !showSettingsModal && ( <motion.span initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3 }} className={`me-3 hidden rounded-full px-4 py-1 font-serif text-sm shadow-sm min-[40rem]:block ${currentTheme === THEMES.GALAXY ? 'text-[#b8bfde] bg-[#2d3561] border border-[#4a5178]' : 'text-gray-600 bg-[#fff7ee] border border-[#e6ddcc]'}`}> {!folderHandle ? "Select a folder (Cmd/Ctrl + O)" : "Save Note (Cmd/Ctrl + S)"} </motion.span> )} </AnimatePresence>
+          <AnimatePresence> {!folderHandle && !showSettingsModal && ( <motion.span initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3 }} className={`me-3 hidden rounded-full px-4 py-1 font-serif text-sm shadow-sm min-[40rem]:block ${currentTheme === THEMES.GALAXY ? 'text-[#b8bfde] bg-[#2d3561] border border-[#4a5178]' : 'text-gray-600 bg-[#fff7ee] border border-[#e6ddcc]'}`}> Select a folder (Cmd/Ctrl + O) </motion.span> )} </AnimatePresence>
           <div className={`flex items-center space-x-2 rounded-full border px-3 py-2 shadow-md transition-colors duration-500 sm:space-x-3 sm:px-4 ${currentTheme === THEMES.GALAXY ? 'border-[#4a5178] bg-[#0f1642]/80' : 'border-[#d4c4a8] bg-white/30'} ${currentTheme === THEMES.KOMOREBI ? 'komorebi-toolbar' : ''}`}>
             <button onClick={toggleFocusMode} className={`opacity-60 hover:opacity-100 transition ${focusMode ? (currentTheme === THEMES.GALAXY ? 'text-[#f39c12]' : 'text-orange-200') : (currentTheme === THEMES.GALAXY ? 'text-[#b8bfde]' : 'text-gray-600')}`} title={focusMode ? "Exit Focus Mode" : "Focus Mode"}> <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"> <circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="4" /> </svg> </button>
             <motion.button onClick={handleFolderButton} className={`opacity-60 hover:opacity-100 transition ${currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3]' : 'text-gray-400'}`} title={folderHandle ? "Open Notes Folder" : "Select Notes Folder"} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}> <FolderOpen size={20} /> </motion.button>
-            {isFirstSave ? ( <motion.button onClick={handleSave} className={`opacity-60 transition ${currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3]' : 'text-gray-400'} ${!noteName.trim() ? 'cursor-not-allowed opacity-30' : 'hover:opacity-100'}`} title="Save Note" whileHover={noteName.trim() ? { scale: 1.1 } : {}} whileTap={noteName.trim() ? { scale: 0.95 } : {}} disabled={!noteName.trim()}> <Save size={20} /> </motion.button> ) : ( <motion.div animate={{ rotate: saveIndicator ? [0, 20, 0] : 0, scale: saveIndicator ? [1, 1.2, 1] : 1, color: saveIndicator ? (currentTheme === THEMES.GALAXY ? ["#8b9dc3", "#1abc9c", "#8b9dc3"] : currentTheme === THEMES.KOMOREBI ? ["#b7cd9b", "#f3d89e", "#b7cd9b"] : ["#6b7280", "#10b981", "#6b7280"]) : (currentTheme === THEMES.GALAXY ? "#8b9dc3" : currentTheme === THEMES.KOMOREBI ? "#b7cd9b" : "#9ca3af") }} transition={{ duration: 0.5 }} title="Note Autosaved"> <Check size={20} className="opacity-100" /> </motion.div> )}
+            {!isFirstSave && ( <motion.div animate={{ rotate: saveIndicator ? [0, 20, 0] : 0, scale: saveIndicator ? [1, 1.2, 1] : 1, color: saveIndicator ? (currentTheme === THEMES.GALAXY ? ["#8b9dc3", "#1abc9c", "#8b9dc3"] : currentTheme === THEMES.KOMOREBI ? ["#b7cd9b", "#f3d89e", "#b7cd9b"] : ["#6b7280", "#10b981", "#6b7280"]) : (currentTheme === THEMES.GALAXY ? "#8b9dc3" : currentTheme === THEMES.KOMOREBI ? "#b7cd9b" : "#9ca3af") }} transition={{ duration: 0.5 }} title="Note Autosaved"> <Check size={20} className="opacity-100" /> </motion.div> )}
             <motion.button onClick={() => { setDropAnimationComplete(false); setIsEditorVisible((prev) => !prev); }} className={`opacity-60 hover:opacity-100 transition ${currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3]' : 'text-gray-400'}`} title={isEditorVisible ? 'Hide Editor' : 'Show Editor'} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}> {isEditorVisible ? <ChevronDown size={20} /> : <ChevronUp size={20} />} </motion.button>
           </div>
           <KeyboardShortcutsModal isOpen={showShortcutsModal} onClose={() => setShowShortcutsModal(false)} theme={currentTheme} />
