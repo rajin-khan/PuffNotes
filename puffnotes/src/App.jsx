@@ -8,8 +8,10 @@ import LandingPage from './components/LandingPage';
 import MarketingLanding from './components/MarketingLanding';
 import OnlineSetupModal from './components/OnlineSetupModal';
 import PageMetadata from './components/PageMetadata';
+import UnsupportedOfflineNotice from './components/UnsupportedOfflineNotice';
 import { findOrCreatePuffnotesFolder } from './lib/googleDrive';
 import { getStoredTheme } from './lib/themeManager';
+import { supportsOfflineMode } from './lib/deviceSupport';
 
 export default function App() {
   const [mode, setMode] = useState('landing');
@@ -52,7 +54,7 @@ export default function App() {
   }, [mode]);
 
   const handleStartOffline = () => {
-    setMode('offline');
+    setMode(supportsOfflineMode() ? 'offline' : 'offline-unsupported');
   };
 
   const handleStartOnline = async () => {
@@ -137,6 +139,17 @@ export default function App() {
         ) : null;
       case 'offline':
         return <OfflineApp key="offline" onGoToLanding={handleGoToLanding} />;
+      case 'offline-unsupported':
+        return (
+          <UnsupportedOfflineNotice
+            key="offline-unsupported"
+            onBack={handleGoToLanding}
+            onUseOnline={() => {
+              setMode('landing');
+              handleStartOnline();
+            }}
+          />
+        );
       case 'landing':
       default:
         return (
