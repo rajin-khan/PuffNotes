@@ -401,12 +401,12 @@ export default function OnlineApp({ user: _user, accessToken, folderId, onSignOu
 
         <motion.div data-note-page-stage className="fixed bottom-0 left-0 right-0 z-20" initial={shouldReduceMotion ? false : { y: '100%' }} animate={{ y: isEditorVisible ? 0 : '101%' }} transition={shouldReduceMotion ? { duration: 0 } : { type: "spring", stiffness: 300, damping: 35, mass: 0.8 }} onAnimationComplete={() => setDropAnimationComplete(true)}>
           <div data-note-page data-editor-page={editorPage} className={`rounded-t-2xl shadow-2xl max-w-full sm:max-w-3xl mx-auto p-4 sm:p-6 h-[88vh] sm:h-[90vh] flex flex-col relative transition-colors duration-500 ${drawingSurface ? drawingSurfaceColor : focusMode ? (currentTheme === THEMES.GALAXY ? 'bg-[#0d1235]/95' : 'bg-[#fdfbf7]/95') : (currentTheme === THEMES.GALAXY ? 'bg-[#0f1642]/95' : 'bg-white/95')} ${currentTheme === THEMES.KOMOREBI && !drawingSurface ? `komorebi-editor-surface ${focusMode ? 'komorebi-editor-focus' : ''}` : ''}`}>
-             <motion.div className="flex justify-between items-center mb-3 sm:mb-4 flex-shrink-0" animate={{ opacity: focusMode ? 0.3 : 1 }} transition={{ duration: 0.5 }} style={{ pointerEvents: focusMode ? 'none' : 'auto' }}>
+             <motion.div className="mb-3 grid flex-shrink-0 grid-cols-[auto_1fr_auto] items-center gap-y-2 sm:mb-4 sm:flex sm:justify-between" animate={{ opacity: focusMode ? 0.3 : 1 }} transition={{ duration: 0.5 }} style={{ pointerEvents: focusMode ? 'none' : 'auto' }}>
               <div className="flex flex-shrink-0 items-center gap-2 sm:gap-3">
                 <motion.h1 className={`font-serif text-xl sm:text-2xl tracking-tight ${drawingSurface ? drawingInk : currentTheme === THEMES.GALAXY ? 'text-[#e8eaf6]' : 'text-[#1a1a1a]'}`} whileHover={!focusMode ? { x: 2 } : {}}> puffnotes </motion.h1>
                 {!focusMode && !isPreviewMode && <NotePageSwitch page={editorPage} onChange={setEditorPage} theme={currentTheme} />}
               </div>
-              <div className="flex-1 flex justify-center items-center gap-2 mx-2 sm:mx-4 min-w-0">
+              <div className="col-span-3 row-start-2 mx-0 flex min-w-0 items-center justify-center gap-2 sm:mx-4 sm:flex-1">
                  <motion.input type="text" value={noteName} onChange={handleNoteNameChange} className={`w-full max-w-[50%] border-b border-transparent bg-transparent text-center font-serif text-base outline-none transition-opacity duration-300 sm:max-w-[70%] sm:text-sm ${focusMode || isPreviewMode ? 'opacity-0 pointer-events-none' : 'opacity-100'} ${drawingSurface ? `${drawingInk} focus:border-[#8a8177]` : currentTheme === THEMES.GALAXY ? 'text-[#b8bfde] focus:border-[#9b59b6]' : 'text-gray-500 focus:border-gray-300'}`} placeholder="note name..." whileFocus={{ scale: 1.02 }} disabled={focusMode || isPreviewMode} />
                  {!showBeautifyControls && !focusMode && (note.trim() || hasHandwriting(handwriting)) && (
                      <motion.button onClick={togglePreviewMode} title={isPreviewMode ? "Edit Note" : "Preview Note"} className={`opacity-60 hover:opacity-100 transition p-1 flex-shrink-0 ${drawingSurface ? 'text-[#4f566b] hover:text-[#20263a]' : currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3] hover:text-[#e8eaf6]' : 'text-gray-500 hover:text-gray-800'}`} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
@@ -415,7 +415,7 @@ export default function OnlineApp({ user: _user, accessToken, folderId, onSignOu
                   )}
                  {!focusMode && !isPreviewMode && <WritingLinesControl light={drawingSurface} value={writingLines} onChange={updateWritingLines} theme={currentTheme} />}
               </div>
-              <div className={`flex space-x-2 sm:space-x-4 text-lg flex-shrink-0 ${drawingSurface ? drawingInk : currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3]' : 'text-gray-600'}`}>
+              <div className={`col-start-3 flex flex-shrink-0 space-x-1 text-lg sm:space-x-4 ${drawingSurface ? drawingInk : currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3]' : 'text-gray-600'}`}>
                 <motion.button title="Export as PDF" onClick={handleExportPdf} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }} className={`p-1 disabled:opacity-30 ${drawingSurface ? 'hover:text-black' : currentTheme === THEMES.GALAXY ? 'hover:text-[#e8eaf6]' : 'hover:text-gray-900'}`} disabled={(!(showBeautifyControls ? previewNote : note).trim() && !hasHandwriting(handwriting)) || isExportingPdf}>
                   {isExportingPdf ? (
                     <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}>

@@ -296,6 +296,62 @@ export default function HandwritingEditor({ document, onChange, showLines, theme
     </>
   );
 
+  const mobileButton = `${iconButton} h-9 w-9 min-[24rem]:h-10 min-[24rem]:w-10`;
+  const renderMobilePalette = () => (
+    <>
+      <div className="flex items-center justify-between gap-1">
+        <button type="button" onClick={() => setPaletteOpen(false)} className={mobileButton} aria-label="Hide handwriting tools"><X size={17} aria-hidden="true" /></button>
+        <button
+          type="button"
+          onClick={() => setTool(tool === 'pen' ? 'pan' : 'pen')}
+          aria-pressed={tool === 'pan'}
+          aria-label={tool === 'pen' ? 'Switch to move canvas' : 'Switch to draw'}
+          className={`${mobileButton} relative ${tool !== 'eraser' ? selectedColor : ''}`}
+        >
+          <PenLine className={`absolute transition-[opacity,scale,filter] duration-200 ${tool === 'pen' ? 'scale-25 opacity-0 blur-[4px]' : 'scale-100 opacity-100 blur-0'}`} size={17} aria-hidden="true" />
+          <Hand className={`absolute transition-[opacity,scale,filter] duration-200 ${tool === 'pen' ? 'scale-100 opacity-100 blur-0' : 'scale-25 opacity-0 blur-[4px]'}`} size={17} aria-hidden="true" />
+        </button>
+        <button type="button" onClick={() => setTool('eraser')} aria-pressed={tool === 'eraser'} className={`${mobileButton} ${tool === 'eraser' ? selectedColor : ''}`} aria-label="Eraser"><Eraser size={17} aria-hidden="true" /></button>
+        {HANDWRITING_COLORS.map((ink) => (
+          <button key={ink} type="button" onClick={() => { setColor(ink); setTool('pen'); }} aria-label={`Ink ${ink}`} aria-pressed={color === ink && tool === 'pen'} className="grid h-10 w-10 place-items-center rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">
+            <span className={`h-5 w-5 rounded-full border border-white/70 shadow-[0_0_0_1px_rgba(0,0,0,0.35)] ${color === ink && tool === 'pen' ? 'ring-2 ring-current ring-offset-2 ring-offset-transparent' : ''}`} style={{ backgroundColor: ink }} aria-hidden="true" />
+          </button>
+        ))}
+      </div>
+      <div className="flex items-center gap-2 border-y border-current/15 py-1">
+        <label className="flex min-w-0 flex-1 items-center gap-2 px-1">
+          <span className="text-[11px] opacity-75">{tool === 'eraser' ? 'Eraser' : 'Pen'}</span>
+          <input
+            type="range"
+            min="0"
+            max="2"
+            step="1"
+            value={tool === 'eraser' ? ERASER_SIZES.indexOf(eraserSize) : HANDWRITING_WIDTHS.indexOf(penWidth)}
+            onChange={(event) => {
+              const index = Number(event.target.value);
+              if (tool === 'eraser') setEraserSize(ERASER_SIZES[index]);
+              else setPenWidth(HANDWRITING_WIDTHS[index]);
+            }}
+            className="h-10 min-w-0 flex-1 accent-current"
+            aria-label={tool === 'eraser' ? 'Eraser size' : 'Pen thickness'}
+          />
+        </label>
+        <button type="button" onClick={undo} disabled={!undoRef.current.length} className={`${mobileButton} disabled:opacity-25`} aria-label="Undo handwriting"><Undo2 size={17} aria-hidden="true" /></button>
+        <button type="button" onClick={redo} disabled={!redoRef.current.length} className={`${mobileButton} disabled:opacity-25`} aria-label="Redo handwriting"><Redo2 size={17} aria-hidden="true" /></button>
+      </div>
+      <div className="flex items-center justify-between gap-0.5">
+        <button type="button" onClick={() => setZoom((value) => clamp(value - 0.25, 0.5, 2))} disabled={zoom <= 0.5} className={`${mobileButton} disabled:opacity-25`} aria-label="Zoom out"><Minus size={17} aria-hidden="true" /></button>
+        <output className="w-10 text-center font-mono text-[11px] tabular-nums" aria-live="polite">{Math.round(zoom * 100)}%</output>
+        <button type="button" onClick={() => setZoom((value) => clamp(value + 0.25, 0.5, 2))} disabled={zoom >= 2} className={`${mobileButton} disabled:opacity-25`} aria-label="Zoom in"><Plus size={17} aria-hidden="true" /></button>
+        <button type="button" onClick={() => goToPage(pageIndex - 1)} disabled={pageIndex === 0} className={`${mobileButton} disabled:opacity-25`} aria-label="Previous handwriting page"><ChevronLeft size={17} aria-hidden="true" /></button>
+        <span className="font-mono text-[11px] tabular-nums" aria-live="polite">{pageIndex + 1}/{document.pages.length}</span>
+        <button type="button" onClick={() => goToPage(pageIndex + 1)} disabled={pageIndex === document.pages.length - 1} className={`${mobileButton} disabled:opacity-25`} aria-label="Next handwriting page"><ChevronRight size={17} aria-hidden="true" /></button>
+        <button type="button" onClick={addPage} className={mobileButton} aria-label="Add handwriting page"><Plus size={17} aria-hidden="true" /></button>
+        <button type="button" onClick={removePage} className={`${mobileButton} hover:text-[#b42318]`} aria-label={document.pages.length === 1 ? 'Clear handwriting page' : 'Delete handwriting page'}><Trash2 size={17} aria-hidden="true" /></button>
+      </div>
+    </>
+  );
+
   return (
     <div className="relative flex h-full min-h-0 flex-1" data-handwriting-editor>
       <div ref={scrollRef} className="min-h-0 min-w-0 flex-1 overflow-auto overscroll-contain">
@@ -331,14 +387,14 @@ export default function HandwritingEditor({ document, onChange, showLines, theme
       <AnimatePresence initial={false}>
         {paletteOpen && (
           <motion.aside
-            className={`absolute end-1 top-1/2 z-30 flex max-h-[70%] w-12 -translate-y-1/2 flex-col items-center overflow-x-hidden overflow-y-auto overscroll-contain rounded-full border px-1.5 py-2 shadow-xl [scrollbar-width:none] [&::-webkit-scrollbar]:hidden min-[60rem]:hidden ${paletteColor}`}
+            className={`absolute inset-x-2 bottom-2 z-30 overflow-hidden rounded-2xl border px-2 py-1.5 shadow-xl min-[60rem]:hidden ${paletteColor}`}
             aria-label="Handwriting tools"
-            initial={shouldReduceMotion ? { opacity: 0, y: '-50%' } : { opacity: 0, x: 24, y: '-50%' }}
-            animate={{ opacity: 1, x: 0, y: '-50%' }}
-            exit={shouldReduceMotion ? { opacity: 0, y: '-50%' } : { opacity: 0, x: 24, y: '-50%' }}
+            initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 16 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
           >
-            {renderPalette(() => setPaletteOpen(false))}
+            {renderMobilePalette()}
           </motion.aside>
         )}
       </AnimatePresence>
