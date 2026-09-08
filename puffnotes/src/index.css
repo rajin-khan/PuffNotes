@@ -19,6 +19,30 @@
   font-synthesis: none;
 }
 
+.ruled-writing-surface {
+  --ruled-line-color: rgb(104 91 72 / 20%);
+  --ruled-line-height: 26px;
+  --ruled-line-width: 1px;
+  line-height: 26px;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(var(--ruled-line-height) - var(--ruled-line-width)),
+    var(--ruled-line-color) calc(var(--ruled-line-height) - var(--ruled-line-width)),
+    var(--ruled-line-color) var(--ruled-line-height)
+  );
+  background-position: 0 0;
+  background-attachment: local;
+}
+
+[data-puffnotes-theme="galaxy"] .ruled-writing-surface {
+  --ruled-line-color: rgb(139 157 195 / 22%);
+}
+
+[data-puffnotes-theme="komorebi"] .ruled-writing-surface {
+  --ruled-line-color: rgb(231 189 135 / 18%);
+}
+
 html,
 body {
   overscroll-behavior-y: none;

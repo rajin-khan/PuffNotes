@@ -13,6 +13,8 @@ import KeyboardShortcutsModal from './KeyboardShortcutsModal';
 import OnboardingModal from './OnboardingModal';
 import ThemeSwitcher from './ThemeSwitcher';
 import SettingsModal from './SettingsModal';
+import WritingLinesControl from './WritingLinesControl';
+import useWritingLines from '../hooks/useWritingLines';
 import { ModalPresence } from './ModalMotion';
 import ThemeBackground from './ThemeBackground';
 import { THEMES, getStoredTheme, setStoredTheme } from '../lib/themeManager';
@@ -86,6 +88,7 @@ export default function OnlineApp({ user: _user, accessToken, folderId, onSignOu
   const [isBeautifying, setIsBeautifying] = useState(false);
   const [saveStatus, setSaveStatus] = useState('saved');
   const [focusMode, setFocusMode] = useState(false);
+  const [writingLines, updateWritingLines] = useWritingLines();
   const [dropAnimationComplete, setDropAnimationComplete] = useState(true);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
@@ -321,6 +324,7 @@ export default function OnlineApp({ user: _user, accessToken, folderId, onSignOu
                          {isPreviewMode ? <Pen size={16} /> : <Eye size={16} />}
                      </motion.button>
                   )}
+                 {!focusMode && !isPreviewMode && <WritingLinesControl value={writingLines} onChange={updateWritingLines} theme={currentTheme} />}
               </div>
               <div className={`flex space-x-2 sm:space-x-4 text-lg flex-shrink-0 ${currentTheme === THEMES.GALAXY ? 'text-[#8b9dc3]' : 'text-gray-600'}`}>
                 <motion.button title="Export as PDF" onClick={handleExportPdf} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }} className={`p-1 disabled:opacity-30 ${currentTheme === THEMES.GALAXY ? 'hover:text-[#e8eaf6]' : 'hover:text-gray-900'}`} disabled={!(showBeautifyControls ? previewNote : note).trim() || isExportingPdf}>
@@ -349,7 +353,7 @@ export default function OnlineApp({ user: _user, accessToken, folderId, onSignOu
                ) : isPreviewMode && !showBeautifyControls ? (
                   <MarkdownPreview markdownText={note} theme={currentTheme} />
                ) : (
-                  <textarea value={showBeautifyControls ? previewNote : note} onChange={handleNoteChange} placeholder="A quiet place to write..." className={`w-full h-full font-mono text-sm bg-transparent resize-none outline-none leading-relaxed placeholder:italic transition-all duration-300 ${focusMode ? 'text-base px-2' : 'text-sm'} [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${currentTheme === THEMES.GALAXY ? 'text-[#e8eaf6] placeholder:text-[#6c7b95]' : 'text-gray-800 placeholder:text-gray-400'}`} readOnly={Boolean(deletingNote) || isBeautifying || showBeautifyControls} />
+                  <textarea value={showBeautifyControls ? previewNote : note} onChange={handleNoteChange} placeholder="A quiet place to write..." className={`w-full h-full font-mono text-sm bg-transparent resize-none outline-none placeholder:italic transition-[color,font-size,padding] duration-300 ${writingLines ? 'ruled-writing-surface' : 'leading-relaxed'} ${focusMode ? 'text-base px-2' : 'text-sm'} [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${currentTheme === THEMES.GALAXY ? 'text-[#e8eaf6] placeholder:text-[#6c7b95]' : 'text-gray-800 placeholder:text-gray-400'}`} readOnly={Boolean(deletingNote) || isBeautifying || showBeautifyControls} />
                )}
             </div>
              <AnimatePresence>
