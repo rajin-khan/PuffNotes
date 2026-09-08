@@ -46,7 +46,7 @@ export default function LandingPage({ onStartOffline, onStartOnline, isOnlineLoa
   }, [introComplete]);
 
   // --- NEW: Your simple, editable message ---
-  const devMessage = 'Handwritten Notes are here! Draw away 🥳';
+  const devMessage = 'Handwritten Notes are here! Draw away <3';
 
   return (
     <motion.div

@@ -17,7 +17,7 @@ test('landing copy and current version remain unchanged', async () => {
     'Works anywhere.',
     'Desktop & Chromium Browsers only.',
     'Stable 2.2.0',
-    'Handwritten Notes are here! Draw away 🥳',
+    'Handwritten Notes are here! Draw away <3',
   ]) {
     assert.ok(source.includes(expected), `missing landing contract: ${expected}`);
   }
