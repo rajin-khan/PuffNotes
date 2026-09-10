@@ -166,7 +166,7 @@ export default function MarketingLanding({ onOpenApp }) {
 
           <div className="relative z-10 mx-auto grid w-full max-w-7xl gap-10 px-5 pb-12 pt-32 sm:px-8 sm:pb-16 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
             <motion.div initial={shouldReduceMotion ? false : { opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: shouldReduceMotion ? 0 : 0.7, ease: [0.2, 0, 0, 1] }} className="max-w-3xl">
-              <h1 className="text-balance font-serif text-[clamp(3rem,6vw,5.5rem)] leading-[0.94] tracking-[-0.04em]">Write messily.<br />Keep it beautifully.</h1>
+              <h1 className="text-balance font-serif text-[clamp(3rem,6vw,5.5rem)] leading-[0.94] tracking-[-0.04em]">Your notes can be messy here.</h1>
               <p className="mt-7 max-w-[55ch] text-pretty font-mono text-base leading-relaxed text-[#fff8f0]/85 sm:text-lg">A quiet Markdown notebook with AI cleanup, handwritten pages, Google Drive sync, and local files.</p>
               <div className="mt-8 flex flex-wrap items-center gap-4">
                 <button type="button" onClick={onOpenApp} className="min-h-12 rounded-full bg-[#fff8f0] px-7 font-mono text-sm font-semibold text-[#34251c] transition-[transform,background-color] duration-150 hover:bg-white active:scale-[0.96] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4">Open Puffnotes</button>
@@ -223,8 +223,8 @@ export default function MarketingLanding({ onOpenApp }) {
                 <FeatureVideo src="/videos/3.mp4" caption="Preview switches the editor from Markdown to the rendered note." />
               </motion.article>
 
-              <motion.article {...reveal} className="rounded-[1.5rem] bg-[#dce4d6] p-4 sm:p-5">
-                <div className="flex items-start gap-4 px-2 pb-5 pt-2 sm:px-4 sm:pt-4"><FileDown size={25} strokeWidth={1.5} aria-hidden="true" /><div><h3 className="font-serif text-3xl">Export every page</h3><p className="mt-2 max-w-[48ch] font-mono text-sm leading-relaxed text-[#465240]">The PDF starts with typed text, then includes every drawing page. It also keeps the active theme.</p></div></div>
+              <motion.article {...reveal} className="rounded-[1.5rem] bg-[#eadbcd] p-4 sm:p-5">
+                <div className="flex items-start gap-4 px-2 pb-5 pt-2 sm:px-4 sm:pt-4"><FileDown size={25} strokeWidth={1.5} aria-hidden="true" /><div><h3 className="font-serif text-3xl">Export every page</h3><p className="mt-2 max-w-[48ch] font-mono text-sm leading-relaxed text-[#5f4b3f]">The PDF starts with typed text, then includes every drawing page. It also keeps the active theme.</p></div></div>
                 <FeatureVideo src="/videos/4.mp4" caption="One note downloads as one PDF." />
               </motion.article>
             </div>
@@ -267,10 +267,10 @@ export default function MarketingLanding({ onOpenApp }) {
               <p className="mt-5 text-pretty font-mono leading-relaxed text-[#5f4b3f]">Both modes use the same editor. The difference is where Puffnotes writes the files.</p>
             </motion.div>
             <div className="mt-12 grid gap-5 md:grid-cols-2">
-              <motion.article {...reveal} className="rounded-[1.5rem] bg-[#d9e1d2] p-7 sm:p-9">
+              <motion.article {...reveal} className="rounded-[1.5rem] bg-[#eadbcd] p-7 sm:p-9">
                 <Cloud size={30} strokeWidth={1.5} aria-hidden="true" />
-                <p className="mt-8 font-mono text-xs font-semibold uppercase tracking-[0.14em] text-[#5b6b54]">Desktop, tablet, and phone</p><h3 className="mt-3 font-serif text-4xl">Online</h3>
-                <p className="mt-3 max-w-[48ch] text-pretty font-mono text-sm leading-relaxed text-[#465240]">Sign in with Google and Puffnotes saves the Markdown files to a dedicated Drive folder. Open them again from another browser or device.</p>
+                <p className="mt-8 font-mono text-xs font-semibold uppercase tracking-[0.14em] text-[#7a6254]">Desktop, tablet, and phone</p><h3 className="mt-3 font-serif text-4xl">Online</h3>
+                <p className="mt-3 max-w-[48ch] text-pretty font-mono text-sm leading-relaxed text-[#5f4b3f]">Sign in with Google and Puffnotes saves the Markdown files to a dedicated Drive folder. Open them again from another browser or device.</p>
               </motion.article>
               <motion.article {...reveal} className="rounded-[1.5rem] bg-[#eee0d2] p-7 sm:p-9">
                 <FolderLock size={30} strokeWidth={1.5} aria-hidden="true" />
