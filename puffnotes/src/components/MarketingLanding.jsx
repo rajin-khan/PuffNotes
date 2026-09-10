@@ -187,24 +187,24 @@ export default function MarketingLanding({ onOpenApp }) {
             <motion.div {...reveal} className="grid gap-8 lg:grid-cols-[0.75fr_1.25fr] lg:items-end">
               <div>
                 <Wand2 size={34} strokeWidth={1.5} aria-hidden="true" />
-                <h2 className="mt-7 max-w-[12ch] text-balance font-serif text-4xl leading-[1.02] tracking-tight sm:text-6xl">Rough notes in. Structured Markdown out.</h2>
+                <h2 className="mt-7 max-w-[12ch] text-balance font-serif text-4xl leading-[1.02] tracking-tight sm:text-6xl">Give the wand your rough draft.</h2>
               </div>
               <div className="max-w-2xl lg:justify-self-end">
-                <p className="text-pretty font-mono text-base leading-relaxed text-[#e6dbcf] sm:text-lg">Drop in fragments, misspellings, or half a thought. Puffnotes uses AI to expand the useful parts, add missing context, and return an organized note you can edit.</p>
-                <p className="mt-4 font-mono text-sm text-[#cbbcaf]">Review the result before it replaces anything. Bring your own free Groq key whenever the shared allowance runs out.</p>
+                <p className="text-pretty font-mono text-base leading-relaxed text-[#e6dbcf] sm:text-lg">A title and a few broken sentences are enough. Puffnotes uses AI to fill in the missing context and return an organized Markdown draft that you can still edit.</p>
+                <p className="mt-4 font-mono text-sm text-[#cbbcaf]">The rewrite never replaces your note until you approve it. If shared access runs out, add a free Groq key in Settings.</p>
               </div>
             </motion.div>
 
             <motion.div {...reveal} className="mt-14 grid gap-5 rounded-[1.75rem] bg-[#f7efe5] p-3 text-[#34251c] sm:p-5 lg:grid-cols-[0.72fr_1.28fr] lg:items-center">
               <div className="px-5 py-7 sm:px-8 sm:py-10">
-                <p className="font-mono text-xs font-semibold uppercase tracking-[0.14em] text-[#846b5c]">One click, then your call</p>
+                <p className="font-mono text-xs font-semibold uppercase tracking-[0.14em] text-[#846b5c]">How the rewrite works</p>
                 <ol className="mt-7 space-y-7">
-                  <li className="grid grid-cols-[2rem_1fr] gap-3"><span className="font-mono text-sm text-[#9a4038]">01</span><div><h3 className="font-serif text-2xl">Write the bad first draft</h3><p className="mt-2 font-mono text-sm leading-relaxed text-[#5f4b3f]">Lists, fragments, and shorthand are all fair game.</p></div></li>
-                  <li className="grid grid-cols-[2rem_1fr] gap-3"><span className="font-mono text-sm text-[#9a4038]">02</span><div><h3 className="font-serif text-2xl">Tap the wand</h3><p className="mt-2 font-mono text-sm leading-relaxed text-[#5f4b3f]">AI turns the raw material into clear Markdown.</p></div></li>
-                  <li className="grid grid-cols-[2rem_1fr] gap-3"><span className="font-mono text-sm text-[#9a4038]">03</span><div><h3 className="font-serif text-2xl">Accept it or keep yours</h3><p className="mt-2 font-mono text-sm leading-relaxed text-[#5f4b3f]">You see the rewrite before the note changes.</p></div></li>
+                  <li className="grid grid-cols-[2rem_1fr] gap-3"><span className="font-mono text-sm text-[#9a4038]">01</span><div><h3 className="font-serif text-2xl">Write what you remember</h3><p className="mt-2 font-mono text-sm leading-relaxed text-[#5f4b3f]">A rough title and unfinished sentences will do.</p></div></li>
+                  <li className="grid grid-cols-[2rem_1fr] gap-3"><span className="font-mono text-sm text-[#9a4038]">02</span><div><h3 className="font-serif text-2xl">Press the wand</h3><p className="mt-2 font-mono text-sm leading-relaxed text-[#5f4b3f]">Puffnotes builds them into a Markdown draft.</p></div></li>
+                  <li className="grid grid-cols-[2rem_1fr] gap-3"><span className="font-mono text-sm text-[#9a4038]">03</span><div><h3 className="font-serif text-2xl">Read the rewrite</h3><p className="mt-2 font-mono text-sm leading-relaxed text-[#5f4b3f]">Keep it, try again, or return to your original note.</p></div></li>
                 </ol>
               </div>
-              <FeatureVideo src="/videos/2.mp4" caption="AI cleanup turns a scattered draft into a full, editable note." />
+              <FeatureVideo src="/videos/2.mp4" caption="The wand builds a detailed note from a short draft." />
             </motion.div>
           </div>
         </section>
@@ -212,27 +212,27 @@ export default function MarketingLanding({ onOpenApp }) {
         <section className="px-5 py-24 sm:px-8 sm:py-32">
           <div className="mx-auto max-w-7xl">
             <motion.div {...reveal} className="max-w-3xl">
-              <p className="font-mono text-xs font-semibold uppercase tracking-[0.14em] text-[#846b5c]">The notebook</p>
-              <h2 className="mt-5 text-balance font-serif text-4xl leading-[1.04] tracking-tight sm:text-6xl">Useful when you need it. Quiet when you don’t.</h2>
-              <p className="mt-5 max-w-[65ch] text-pretty font-mono leading-relaxed text-[#5f4b3f]">Write in Markdown without a crowded toolbar. Preview, focus, and export are there when the note is ready for them.</p>
+              <p className="font-mono text-xs font-semibold uppercase tracking-[0.14em] text-[#846b5c]">Inside the editor</p>
+              <h2 className="mt-5 text-balance font-serif text-4xl leading-[1.04] tracking-tight sm:text-6xl">Markdown gets the whole page.</h2>
+              <p className="mt-5 max-w-[65ch] text-pretty font-mono leading-relaxed text-[#5f4b3f]">The editor keeps formatting controls off the page. Open Preview to check the rendered note. Focus Mode hides the remaining buttons, and PDF export packages the note for sharing.</p>
             </motion.div>
 
             <div className="mt-14 grid gap-6 lg:grid-cols-2">
               <motion.article {...reveal} className="rounded-[1.5rem] bg-[#eadbcd] p-4 sm:p-5">
-                <div className="flex items-start gap-4 px-2 pb-5 pt-2 sm:px-4 sm:pt-4"><Eye size={25} strokeWidth={1.5} aria-hidden="true" /><div><h3 className="font-serif text-3xl">Preview without leaving</h3><p className="mt-2 max-w-[48ch] font-mono text-sm leading-relaxed text-[#5f4b3f]">Switch between raw Markdown and the finished note in the same editor.</p></div></div>
-                <FeatureVideo src="/videos/3.mp4" caption="The preview keeps headings, lists, links, and code readable." />
+                <div className="flex items-start gap-4 px-2 pb-5 pt-2 sm:px-4 sm:pt-4"><Eye size={25} strokeWidth={1.5} aria-hidden="true" /><div><h3 className="font-serif text-3xl">Read the rendered note</h3><p className="mt-2 max-w-[48ch] font-mono text-sm leading-relaxed text-[#5f4b3f]">Preview headings, lists, links, and code without opening a second document.</p></div></div>
+                <FeatureVideo src="/videos/3.mp4" caption="Preview switches the editor from Markdown to the rendered note." />
               </motion.article>
 
               <motion.article {...reveal} className="rounded-[1.5rem] bg-[#dce4d6] p-4 sm:p-5">
-                <div className="flex items-start gap-4 px-2 pb-5 pt-2 sm:px-4 sm:pt-4"><FileDown size={25} strokeWidth={1.5} aria-hidden="true" /><div><h3 className="font-serif text-3xl">Send a proper PDF</h3><p className="mt-2 max-w-[48ch] font-mono text-sm leading-relaxed text-[#465240]">Export typed text and drawing pages together, with the active theme carried through.</p></div></div>
-                <FeatureVideo src="/videos/4.mp4" caption="Export the whole note when it needs to leave Puffnotes." />
+                <div className="flex items-start gap-4 px-2 pb-5 pt-2 sm:px-4 sm:pt-4"><FileDown size={25} strokeWidth={1.5} aria-hidden="true" /><div><h3 className="font-serif text-3xl">Export every page</h3><p className="mt-2 max-w-[48ch] font-mono text-sm leading-relaxed text-[#465240]">The PDF starts with typed text, then includes every drawing page. It also keeps the active theme.</p></div></div>
+                <FeatureVideo src="/videos/4.mp4" caption="One note downloads as one PDF." />
               </motion.article>
             </div>
 
             <motion.div {...reveal} className="mt-6 grid gap-8 rounded-[1.5rem] bg-[#34251c] p-7 text-[#fff8f0] sm:p-10 lg:grid-cols-[auto_1fr_auto] lg:items-center">
               <Focus size={32} strokeWidth={1.5} aria-hidden="true" />
-              <div><h3 className="font-serif text-3xl">The buttons can leave.</h3><p className="mt-2 max-w-[62ch] font-mono text-sm leading-relaxed text-[#e6dbcf]">Focus mode tucks the controls away. Your note gets the room back.</p></div>
-              <div className="font-mono text-xs uppercase tracking-[0.14em] text-[#cbbcaf]">One tap to focus</div>
+              <div><h3 className="font-serif text-3xl">Hide the controls</h3><p className="mt-2 max-w-[62ch] font-mono text-sm leading-relaxed text-[#e6dbcf]">Focus Mode clears the buttons from the screen while you write.</p></div>
+              <div className="font-mono text-xs uppercase tracking-[0.14em] text-[#cbbcaf]">Focus Mode</div>
             </motion.div>
           </div>
         </section>
@@ -241,20 +241,20 @@ export default function MarketingLanding({ onOpenApp }) {
           <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
             <motion.div {...reveal} className="relative min-h-[28rem] overflow-hidden rounded-[1.5rem] bg-[#fbf9f3] p-6 shadow-[0_18px_50px_rgba(46,56,43,0.12)] outline outline-1 outline-black/10 sm:p-10">
               <div className="flex items-center justify-between font-mono text-xs text-[#667260]"><span>drawing pages</span><span>2 / 3</span></div>
-              <svg viewBox="0 0 620 360" className="mt-7 w-full" role="img" aria-label="A handwritten diagram connecting a rough idea to a finished note">
+              <svg viewBox="0 0 620 360" className="mt-7 w-full" role="img" aria-label="A hand-drawn diagram across two canvas pages">
                 <path d="M72 82 C142 40 190 42 246 90 C290 128 334 126 384 82 C427 44 478 50 545 106" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" />
                 <path d="M104 248 C152 166 229 159 284 220 C330 271 403 267 492 190" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" />
                 <circle cx="72" cy="82" r="13" fill="#fbf9f3" stroke="currentColor" strokeWidth="4" /><circle cx="545" cy="106" r="13" fill="#fbf9f3" stroke="currentColor" strokeWidth="4" /><circle cx="104" cy="248" r="13" fill="#fbf9f3" stroke="currentColor" strokeWidth="4" /><circle cx="492" cy="190" r="13" fill="#fbf9f3" stroke="currentColor" strokeWidth="4" />
                 <path d="M296 42 V318" fill="none" stroke="#9daf96" strokeWidth="2" strokeDasharray="7 9" />
               </svg>
-              <div className="absolute bottom-5 start-6 rounded-full bg-[#2e382b] px-4 py-2 font-mono text-xs text-[#f7f2e8] sm:bottom-8 sm:start-10">pen, eraser, zoom, more pages</div>
+              <div className="absolute bottom-5 start-6 rounded-full bg-[#2e382b] px-4 py-2 font-mono text-xs text-[#f7f2e8] sm:bottom-8 sm:start-10">drawing tools</div>
             </motion.div>
 
             <motion.div {...reveal}>
               <PenLine size={34} strokeWidth={1.5} aria-hidden="true" />
-              <h2 className="mt-7 text-balance font-serif text-4xl leading-[1.04] tracking-tight sm:text-6xl">Some thoughts arrive as shapes.</h2>
-              <p className="mt-5 max-w-[58ch] text-pretty font-mono leading-relaxed text-[#4d5b48]">Switch the same note to a full-width drawing canvas. Add pages, zoom in, move around, erase precisely, then return to typing whenever you want.</p>
-              <p className="mt-4 max-w-[58ch] font-mono text-sm leading-relaxed text-[#5f6c59]">Preview and PDF export place the drawing pages after the typed page, so the note stays one note.</p>
+              <h2 className="mt-7 text-balance font-serif text-4xl leading-[1.04] tracking-tight sm:text-6xl">Draw in the same note.</h2>
+              <p className="mt-5 max-w-[58ch] text-pretty font-mono leading-relaxed text-[#4d5b48]">Switch the current note to a full-width canvas. Choose the pen or eraser, set its size, zoom, pan, and add more pages.</p>
+              <p className="mt-4 max-w-[58ch] font-mono text-sm leading-relaxed text-[#5f6c59]">Puffnotes stores each drawing page with its note. Preview and PDF export place them after any typed text.</p>
             </motion.div>
           </div>
         </section>
@@ -262,20 +262,20 @@ export default function MarketingLanding({ onOpenApp }) {
         <section className="px-5 py-24 sm:px-8 sm:py-32">
           <div className="mx-auto max-w-7xl">
             <motion.div {...reveal} className="max-w-2xl">
-              <p className="font-mono text-xs font-semibold uppercase tracking-[0.14em] text-[#846b5c]">Storage</p>
-              <h2 className="mt-5 text-balance font-serif text-4xl leading-[1.04] tracking-tight sm:text-6xl">Your notes. Your call.</h2>
-              <p className="mt-5 text-pretty font-mono leading-relaxed text-[#5f4b3f]">Use the same editor either way. Pick the home that fits the device.</p>
+              <p className="font-mono text-xs font-semibold uppercase tracking-[0.14em] text-[#846b5c]">Where notes are saved</p>
+              <h2 className="mt-5 text-balance font-serif text-4xl leading-[1.04] tracking-tight sm:text-6xl">Save to Google Drive or your computer.</h2>
+              <p className="mt-5 text-pretty font-mono leading-relaxed text-[#5f4b3f]">Both modes use the same editor. The difference is where Puffnotes writes the files.</p>
             </motion.div>
             <div className="mt-12 grid gap-5 md:grid-cols-2">
               <motion.article {...reveal} className="rounded-[1.5rem] bg-[#d9e1d2] p-7 sm:p-9">
                 <Cloud size={30} strokeWidth={1.5} aria-hidden="true" />
-                <p className="mt-8 font-mono text-xs font-semibold uppercase tracking-[0.14em] text-[#5b6b54]">Best across devices</p><h3 className="mt-3 font-serif text-4xl">Online</h3>
-                <p className="mt-3 max-w-[48ch] text-pretty font-mono text-sm leading-relaxed text-[#465240]">Connect Google Drive to reach the same notes across desktop, tablet, and phone. Puffnotes keeps them in a dedicated Drive folder.</p>
+                <p className="mt-8 font-mono text-xs font-semibold uppercase tracking-[0.14em] text-[#5b6b54]">Desktop, tablet, and phone</p><h3 className="mt-3 font-serif text-4xl">Online</h3>
+                <p className="mt-3 max-w-[48ch] text-pretty font-mono text-sm leading-relaxed text-[#465240]">Sign in with Google and Puffnotes saves the Markdown files to a dedicated Drive folder. Open them again from another browser or device.</p>
               </motion.article>
               <motion.article {...reveal} className="rounded-[1.5rem] bg-[#eee0d2] p-7 sm:p-9">
                 <FolderLock size={30} strokeWidth={1.5} aria-hidden="true" />
-                <p className="mt-8 font-mono text-xs font-semibold uppercase tracking-[0.14em] text-[#7a6254]">Best on desktop</p><h3 className="mt-3 font-serif text-4xl">Offline</h3>
-                <p className="mt-3 max-w-[48ch] text-pretty font-mono text-sm leading-relaxed text-[#5f4b3f]">Pick a local folder in a supported desktop browser. Puffnotes autosaves ordinary Markdown files there, with no account.</p>
+                <p className="mt-8 font-mono text-xs font-semibold uppercase tracking-[0.14em] text-[#7a6254]">Supported desktop browsers</p><h3 className="mt-3 font-serif text-4xl">Offline</h3>
+                <p className="mt-3 max-w-[48ch] text-pretty font-mono text-sm leading-relaxed text-[#5f4b3f]">Choose a local folder once. Puffnotes autosaves Markdown files there and does not require an account.</p>
               </motion.article>
             </div>
           </div>
@@ -283,7 +283,7 @@ export default function MarketingLanding({ onOpenApp }) {
 
         <section className="px-5 pb-24 sm:px-8 sm:pb-32">
           <motion.div {...reveal} className="mx-auto flex max-w-7xl flex-col gap-8 rounded-[1.75rem] bg-[#34251c] px-7 py-12 text-[#fff8f0] sm:px-12 sm:py-16 lg:flex-row lg:items-end lg:justify-between">
-            <div><p className="font-mono text-xs uppercase tracking-[0.14em] text-[#cbbcaf]">The thought is already leaving</p><h2 className="mt-5 max-w-[12ch] text-balance font-serif text-4xl leading-[1.04] sm:text-6xl">Catch it before it gets tidy.</h2></div>
+            <div><p className="font-mono text-xs uppercase tracking-[0.14em] text-[#cbbcaf]">Start a note</p><h2 className="mt-5 max-w-[12ch] text-balance font-serif text-4xl leading-[1.04] sm:text-6xl">Write the part you have.</h2></div>
             <button type="button" onClick={onOpenApp} className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 self-start rounded-full bg-[#fff8f0] px-7 font-mono text-sm font-semibold text-[#34251c] transition-[transform,background-color] duration-150 hover:bg-white active:scale-[0.96] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 lg:self-auto">Open Puffnotes <ArrowRight size={17} aria-hidden="true" /></button>
           </motion.div>
         </section>
