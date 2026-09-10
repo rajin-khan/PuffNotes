@@ -184,10 +184,10 @@ export default function MarketingLanding({ onOpenApp }) {
 
         <section id="how-it-works" className="scroll-mt-8 bg-[#251a14] px-5 py-24 text-[#fff8f0] sm:px-8 sm:py-32">
           <div className="mx-auto max-w-7xl">
-            <motion.div {...reveal} className="grid gap-8 lg:grid-cols-[0.75fr_1.25fr] lg:items-end">
+            <motion.div {...reveal} className="grid gap-8 lg:grid-cols-2 lg:items-end">
               <div>
                 <Wand2 size={34} strokeWidth={1.5} aria-hidden="true" />
-                <h2 className="mt-7 max-w-[12ch] text-balance font-serif text-4xl leading-[1.02] tracking-tight sm:text-6xl">Give the wand your rough draft.</h2>
+                <h2 className="mt-7 max-w-[18ch] text-balance font-serif text-4xl leading-[1.02] tracking-tight sm:text-6xl">Give the wand your rough draft.</h2>
               </div>
               <div className="max-w-2xl lg:justify-self-end">
                 <p className="text-pretty font-mono text-base leading-relaxed text-[#e6dbcf] sm:text-lg">A title and a few broken sentences are enough. Puffnotes uses AI to fill in the missing context and return an organized Markdown draft that you can still edit.</p>
@@ -237,24 +237,24 @@ export default function MarketingLanding({ onOpenApp }) {
           </div>
         </section>
 
-        <section className="bg-[#dfe7d9] px-5 py-24 text-[#2e382b] sm:px-8 sm:py-32">
+        <section className="bg-[#eadbcd] px-5 py-24 text-[#34251c] sm:px-8 sm:py-32">
           <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
-            <motion.div {...reveal} className="relative min-h-[28rem] overflow-hidden rounded-[1.5rem] bg-[#fbf9f3] p-6 shadow-[0_18px_50px_rgba(46,56,43,0.12)] outline outline-1 outline-black/10 sm:p-10">
-              <div className="flex items-center justify-between font-mono text-xs text-[#667260]"><span>drawing pages</span><span>2 / 3</span></div>
+            <motion.div {...reveal} className="relative min-h-[28rem] overflow-hidden rounded-[1.5rem] bg-[#fbf9f3] p-6 shadow-[0_18px_50px_rgba(52,37,28,0.12)] outline outline-1 outline-black/10 sm:p-10">
+              <div className="flex items-center justify-between font-mono text-xs text-[#846b5c]"><span>drawing pages</span><span>2 / 3</span></div>
               <svg viewBox="0 0 620 360" className="mt-7 w-full" role="img" aria-label="A hand-drawn diagram across two canvas pages">
                 <path d="M72 82 C142 40 190 42 246 90 C290 128 334 126 384 82 C427 44 478 50 545 106" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" />
                 <path d="M104 248 C152 166 229 159 284 220 C330 271 403 267 492 190" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" />
                 <circle cx="72" cy="82" r="13" fill="#fbf9f3" stroke="currentColor" strokeWidth="4" /><circle cx="545" cy="106" r="13" fill="#fbf9f3" stroke="currentColor" strokeWidth="4" /><circle cx="104" cy="248" r="13" fill="#fbf9f3" stroke="currentColor" strokeWidth="4" /><circle cx="492" cy="190" r="13" fill="#fbf9f3" stroke="currentColor" strokeWidth="4" />
-                <path d="M296 42 V318" fill="none" stroke="#9daf96" strokeWidth="2" strokeDasharray="7 9" />
+                <path d="M296 42 V318" fill="none" stroke="#cbbcaf" strokeWidth="2" strokeDasharray="7 9" />
               </svg>
-              <div className="absolute bottom-5 start-6 rounded-full bg-[#2e382b] px-4 py-2 font-mono text-xs text-[#f7f2e8] sm:bottom-8 sm:start-10">drawing tools</div>
+              <div className="absolute bottom-5 start-6 rounded-full bg-[#34251c] px-4 py-2 font-mono text-xs text-[#fff8f0] sm:bottom-8 sm:start-10">drawing tools</div>
             </motion.div>
 
             <motion.div {...reveal}>
               <PenLine size={34} strokeWidth={1.5} aria-hidden="true" />
               <h2 className="mt-7 text-balance font-serif text-4xl leading-[1.04] tracking-tight sm:text-6xl">Draw in the same note.</h2>
-              <p className="mt-5 max-w-[58ch] text-pretty font-mono leading-relaxed text-[#4d5b48]">Switch the current note to a full-width canvas. Choose the pen or eraser, set its size, zoom, pan, and add more pages.</p>
-              <p className="mt-4 max-w-[58ch] font-mono text-sm leading-relaxed text-[#5f6c59]">Puffnotes stores each drawing page with its note. Preview and PDF export place them after any typed text.</p>
+              <p className="mt-5 max-w-[58ch] text-pretty font-mono leading-relaxed text-[#5f4b3f]">Switch the current note to a full-width canvas. Choose the pen or eraser, set its size, zoom, pan, and add more pages.</p>
+              <p className="mt-4 max-w-[58ch] font-mono text-sm leading-relaxed text-[#7a6254]">Puffnotes stores each drawing page with its note. Preview and PDF export place them after any typed text.</p>
             </motion.div>
           </div>
         </section>
