@@ -60,7 +60,7 @@ test('every visible Rajin Khan credit uses the self-hosted handwritten font', as
   const paths = [
     'src/components/LandingPage.jsx',
     'src/components/SettingsModal.jsx',
-    'src/components/marketing/WarmFooter.jsx',
+    'src/components/MarketingLanding.jsx',
   ];
   const sources = await Promise.all(paths.map(readSource));
 
@@ -258,7 +258,7 @@ test('ThemeBackground collapses motion and playback for reduced-motion users', a
   ], 'reduced theme-motion contract');
 });
 
-test('the landing and editor stages expose a synchronized unlock sequence', async () => {
+test('the launcher and editor stages retain motion inside route-owned screens', async () => {
   const [app, landing, offline, online] = await Promise.all([
     readSource('src/App.jsx'),
     readSource('src/components/LandingPage.jsx'),
@@ -267,11 +267,12 @@ test('the landing and editor stages expose a synchronized unlock sequence', asyn
   ]);
 
   assertIncludesAll(app, [
-    '<AnimatePresence mode="sync" initial={false}>',
-    'key="landing"',
-    'key="offline"',
-    'key="online"',
-  ], 'keyed application-stage transition');
+    '<AnimatePresence mode="wait" initial={false}>',
+    'key={location.pathname}',
+    'path="/app"',
+    'path="/app/offline"',
+    'path="/app/online"',
+  ], 'route-owned application transition');
   assertIncludesAll(landing, [
     'data-app-stage="landing"',
     'data-landing-content',
@@ -496,18 +497,19 @@ test('public pages expose crawl, canonical, social, and app metadata', async () 
   assert.ok(index.includes('<meta property="og:image:height" content="630" />'));
   assert.ok(app.includes('<PageMetadata />'));
   assertIncludesAll(pageMetadata, [
-    "'/welcome'",
-    "title: 'Puffnotes | Write first. Clean it up later.'",
-    "title: 'Puffnotes | A cozy place for messy notes'",
+    "'/app'",
+    "title: 'Puffnotes | Write messily. Keep it beautifully.'",
+    "title: 'Open Puffnotes'",
+    "pathname.startsWith('/app')",
+    "'noindex, nofollow'",
     'link[rel="canonical"]',
     'meta[property="og:url"]',
   ], 'route metadata');
 
   assert.ok(robots.includes('Sitemap: https://puff-notes.vercel.app/sitemap.xml'));
-  assertIncludesAll(sitemap, [
-    '<loc>https://puff-notes.vercel.app/</loc>',
-    '<loc>https://puff-notes.vercel.app/welcome</loc>',
-  ], 'sitemap route');
+  assert.ok(sitemap.includes('<loc>https://puff-notes.vercel.app/</loc>'));
+  assert.ok(!sitemap.includes('/welcome'), 'the legacy redirect must not be indexed');
+  assert.ok(!sitemap.includes('/app'), 'private app routes must not be indexed');
 
   const manifest = JSON.parse(manifestSource);
   assert.equal(manifest.name, 'Puffnotes');

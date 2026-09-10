@@ -170,7 +170,7 @@ export default function LandingPage({ onStartOffline, onStartOnline, isOnlineLoa
                 </p>
                 <p className="mt-2 font-mono text-xs text-white/40">Created by{' '}<a href="https://rajinkhan.com" target="_blank" rel="noopener noreferrer" className="font-creator-signature underline transition-colors hover:text-white/70">Rajin Khan</a></p>
                 <p className="mt-1 font-mono text-xs text-white/30">
-                  <a href="/welcome" className="underline hover:text-white/50 transition-colors">About Puffnotes</a>
+                  <a href="/" className="underline hover:text-white/50 transition-colors">About Puffnotes</a>
                 </p>
               </motion.div>
             </motion.div>
