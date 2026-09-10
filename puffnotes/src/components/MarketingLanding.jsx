@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { ArrowRight, Cloud, Eye, FileDown, Focus, FolderLock, Github, PenLine, Sparkles } from 'lucide-react';
 import { getStoredTheme, setStoredTheme, THEMES } from '../lib/themeManager';
+import ThemeBackground from './ThemeBackground';
 
 const themes = {
   [THEMES.WARM]: { name: 'Puff', sources: [{ src: '/puff.webm', type: 'video/webm' }, { src: '/puff.mp4', type: 'video/mp4' }] },
@@ -39,6 +40,32 @@ export default function MarketingLanding({ onOpenApp }) {
   const [theme, setTheme] = useState(() => getStoredTheme());
   const [visibleTheme, setVisibleTheme] = useState(() => getStoredTheme());
   const [readyThemes, setReadyThemes] = useState({});
+  const [introComplete, setIntroComplete] = useState(() => {
+    try {
+      return sessionStorage.getItem('puffnotes_intro_seen') === 'true'
+        || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    } catch {
+      return true;
+    }
+  });
+
+  useEffect(() => {
+    if (introComplete) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const timer = window.setTimeout(() => {
+      setIntroComplete(true);
+      try {
+        sessionStorage.setItem('puffnotes_intro_seen', 'true');
+      } catch {
+        // The intro can still finish when storage is unavailable.
+      }
+    }, 2200);
+    return () => {
+      window.clearTimeout(timer);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [introComplete]);
 
   useEffect(() => {
     if (readyThemes[theme]) setVisibleTheme(theme);
@@ -47,10 +74,10 @@ export default function MarketingLanding({ onOpenApp }) {
   useEffect(() => {
     Object.entries(videoRefs.current).forEach(([key, video]) => {
       if (!video) return;
-      if (shouldReduceMotion || key !== visibleTheme) video.pause();
+      if (shouldReduceMotion || !introComplete || key !== visibleTheme) video.pause();
       else video.play().catch(() => {});
     });
-  }, [shouldReduceMotion, visibleTheme]);
+  }, [introComplete, shouldReduceMotion, visibleTheme]);
 
   const markThemeReady = (key) => {
     setReadyThemes((ready) => (ready[key] ? ready : { ...ready, [key]: true }));
@@ -62,7 +89,50 @@ export default function MarketingLanding({ onOpenApp }) {
   };
 
   return (
-    <div className="min-h-[100dvh] overflow-x-hidden bg-[#f7efe5] text-[#34251c] antialiased">
+    <>
+      <AnimatePresence>
+        {!introComplete && (
+          <motion.div
+            key="opening-title"
+            className="fixed inset-0 z-[200] flex items-center justify-center overflow-hidden bg-black"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+            role="status"
+            aria-label="Puffnotes is loading"
+          >
+            <ThemeBackground theme={theme} />
+            <div className="absolute inset-0 bg-black/70" />
+            <div className="relative z-10 flex flex-col items-center text-center">
+              <motion.p
+                className="font-serif text-6xl tracking-tight text-[#f5f5dc] sm:text-7xl"
+                initial={{ opacity: 0, y: 12, filter: 'blur(6px)' }}
+                animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+              >
+                puffnotes
+              </motion.p>
+              <motion.div
+                className="mt-4 h-px w-32 origin-center bg-[#f5f5dc]/55"
+                initial={{ scaleX: 0, opacity: 0 }}
+                animate={{ scaleX: 1, opacity: 1 }}
+                transition={{ delay: 0.55, duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+                aria-hidden="true"
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+    <motion.div
+      className="min-h-[100dvh] overflow-x-hidden bg-[#f7efe5] text-[#34251c] antialiased"
+      initial={shouldReduceMotion || introComplete ? false : { opacity: 0 }}
+      animate={{ opacity: introComplete ? 1 : 0 }}
+      transition={{ duration: shouldReduceMotion ? 0 : 0.7, ease: [0.22, 1, 0.36, 1] }}
+      aria-hidden={!introComplete}
+      inert={introComplete ? undefined : true}
+    >
       <a href="#main-content" className="fixed start-4 top-4 z-[100] -translate-y-24 rounded-full bg-[#fff8f0] px-4 py-2 font-mono text-sm text-[#34251c] transition-transform focus:translate-y-0">Skip to content</a>
 
       <header className="absolute inset-x-0 top-0 z-30">
@@ -83,7 +153,7 @@ export default function MarketingLanding({ onOpenApp }) {
               <video
                 key={key}
                 ref={(node) => { videoRefs.current[key] = node; }}
-                muted loop playsInline preload="auto" autoPlay={!shouldReduceMotion && key === theme}
+                muted loop playsInline preload="auto" autoPlay={!shouldReduceMotion && introComplete && key === theme}
                 onLoadedData={() => markThemeReady(key)}
                 onCanPlay={() => markThemeReady(key)}
                 className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-500 [transition-timing-function:cubic-bezier(0.2,0,0,1)] ${!shouldReduceMotion && readyThemes[key] && visibleTheme === key ? 'opacity-100' : 'opacity-0'}`}
@@ -228,6 +298,7 @@ export default function MarketingLanding({ onOpenApp }) {
           </div>
         </div>
       </footer>
-    </div>
+    </motion.div>
+    </>
   );
 }

@@ -24,15 +24,23 @@ test('landing copy and current version remain unchanged', async () => {
 });
 
 test('landing motion preserves the session intro and redraws the chooser underline', async () => {
-  const source = await readSource('src/components/LandingPage.jsx');
+  const [launcher, marketing] = await Promise.all([
+    readSource('src/components/LandingPage.jsx'),
+    readSource('src/components/MarketingLanding.jsx'),
+  ]);
 
-  assertIncludesAll(source, [
+  assertIncludesAll(marketing, [
     "sessionStorage.getItem('puffnotes_intro_seen')",
     "sessionStorage.setItem('puffnotes_intro_seen', 'true')",
+    'aria-label="Puffnotes is loading"',
+    'initial={{ scaleX: 0, opacity: 0 }}',
+    '<ThemeBackground theme={theme} />',
+  ], 'homepage intro contract');
+  assertIncludesAll(launcher, [
     'origin-center bg-[#f5f5dc]/30',
     'initial={shouldReduceMotion ? false : { scaleX: 0, opacity: 0 }}',
     'variants={viewVariants}',
-  ], 'landing motion contract');
+  ], 'launcher motion contract');
 });
 
 test('offline notes start autosaving as soon as a folder is selected', async () => {
