@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { ArrowRight, Cloud, Eye, FileDown, Focus, FolderLock, Github, PenLine, Sparkles } from 'lucide-react';
+import { ArrowRight, Cloud, Eye, FileDown, Focus, FolderLock, Github, PenLine, Wand2 } from 'lucide-react';
 import { getStoredTheme, setStoredTheme, THEMES } from '../lib/themeManager';
 import ThemeBackground from './ThemeBackground';
 
@@ -186,7 +186,7 @@ export default function MarketingLanding({ onOpenApp }) {
           <div className="mx-auto max-w-7xl">
             <motion.div {...reveal} className="grid gap-8 lg:grid-cols-[0.75fr_1.25fr] lg:items-end">
               <div>
-                <div className="inline-flex items-center gap-2 rounded-full bg-[#fff8f0] px-3 py-2 font-mono text-xs font-semibold text-[#34251c]"><Sparkles size={15} strokeWidth={2} aria-hidden="true" /> AI cleanup</div>
+                <Wand2 size={34} strokeWidth={1.5} aria-hidden="true" />
                 <h2 className="mt-7 max-w-[12ch] text-balance font-serif text-4xl leading-[1.02] tracking-tight sm:text-6xl">Rough notes in. Structured Markdown out.</h2>
               </div>
               <div className="max-w-2xl lg:justify-self-end">
